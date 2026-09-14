@@ -2,17 +2,22 @@ function clone(value){return typeof structuredClone==='function'?structuredClone
 
 export function ensureP1Snapshot(input){
   const snapshot=clone(input??{});
-  snapshot.version=Math.max(Number(snapshot.version||0),3);
+  snapshot.version=Math.max(Number(snapshot.version||0),4);
   snapshot.inspections=Array.isArray(snapshot.inspections)?snapshot.inspections:[];
   snapshot.maintenance=Array.isArray(snapshot.maintenance)?snapshot.maintenance:[];
   snapshot.alertState=snapshot.alertState&&typeof snapshot.alertState==='object'&&!Array.isArray(snapshot.alertState)?snapshot.alertState:{};
+  snapshot.contractTemplates=Array.isArray(snapshot.contractTemplates)?snapshot.contractTemplates:[];
+  snapshot.issuedContracts=Array.isArray(snapshot.issuedContracts)?snapshot.issuedContracts:[];
+  snapshot.billingPlans=Array.isArray(snapshot.billingPlans)?snapshot.billingPlans:[];
+  snapshot.billingInstallments=Array.isArray(snapshot.billingInstallments)?snapshot.billingInstallments:[];
+  snapshot.collectionActions=Array.isArray(snapshot.collectionActions)?snapshot.collectionActions:[];
   snapshot.customers=Array.isArray(snapshot.customers)?snapshot.customers.map(customer=>({
     ...customer,
     driverLicense:{number:'',category:'',expiry:'',...(customer.driverLicense??{})}
   })):[];
   snapshot.vehicles=Array.isArray(snapshot.vehicles)?snapshot.vehicles.map(vehicle=>({
     ...vehicle,
-    documents:{insuranceExpiry:'',licensingExpiry:'',inspectionExpiry:'',...(vehicle.documents??{})}
+    documents:{insuranceExpiry:'',licensingExpiry:'',inspectionExpiry:'',renavam:'',chassis:'',...(vehicle.documents??{})}
   })):[];
   snapshot.updatedAt=snapshot.updatedAt??new Date().toISOString();
   return snapshot;
