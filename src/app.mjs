@@ -17,7 +17,7 @@ let snapshot=repository.load(),sessionUser=null,active='dashboard',syncInfo=null
 const app=document.querySelector('#app');
 
 function syncMeta(){return syncClient.load();}
-function save(next){snapshot=repository.save(next);render();scheduleAutoSync();return snapshot;}
+function save(next){snapshot=repository.save(next);syncClient.markDirty(snapshot);render();scheduleAutoSync();return snapshot;}
 function replaceSnapshot(next){snapshot=repository.save(next);render();return snapshot;}
 function context(){return{snapshot,sessionUser,save,replaceSnapshot,repository,syncClient,syncInfo,syncNow};}
 
@@ -27,12 +27,12 @@ function scheduleAutoSync(){
 }
 
 async function syncNow({silent=false}={}){
-  if(syncBusy)return {ok:false,skipped:true,snapshot,meta:syncMeta()};
+  if(syncBusy)return {ok:false,skipped:true,snapshot,meta:syncMeta(),offline:syncClient.offlineState()};
   syncBusy=true;
   const result=await syncClient.sync(snapshot);
   if(result.ok&&result.direction==='pull'&&result.snapshot)snapshot=repository.save(result.snapshot);
   syncBusy=false;
-  notifyNative('locadora.sync.status',{ok:result.ok,direction:result.direction??null,revision:result.meta?.revision??0,error:result.meta?.lastError??null});
+  notifyNative('locadora.sync.status',{ok:result.ok,direction:result.direction??null,revision:result.meta?.revision??0,error:result.meta?.lastError??null,pending:result.offline?.pending?.length??0});
   if(!silent)render();
   return result;
 }
@@ -44,10 +44,10 @@ function notifyNative(type,payload){
 
 function render(){
   if(!sessionUser)return renderLogin();
-  const summary=getFinancialSummary(snapshot),alerts=buildOperationalAlerts(snapshot),meta=syncMeta();
+  const summary=getFinancialSummary(snapshot),alerts=buildOperationalAlerts(snapshot),meta=syncMeta(),offline=syncClient.offlineState();
   const nav=[['dashboard','Dashboard'],['reservas','Reservas'],['clientes','Clientes'],['frota','Frota'],...(can(sessionUser,'inspection.read')||can(sessionUser,'inspection.write')?[['vistorias','Vistorias']]:[]),...(can(sessionUser,'maintenance.read')?[['manutencao','Manutenção']]:[]),...(can(sessionUser,'finance.read')?[['financeiro','Financeiro']]:[]),...(can(sessionUser,'alerts.read')?[['alertas',`Alertas${alerts.length?` (${alerts.length})`:''}`]]:[]),...(can(sessionUser,'documents.read')?[['documentos','Documentos']]:[]),...(can(sessionUser,'sync.read')?[['sync','PC ↔ Mobile']]:[]),...(sessionUser.role==='admin'?[['auditoria','Auditoria']]:[]),...(can(sessionUser,'backup.create')||sessionUser.role==='admin'?[['backup','Backup e Config.']]:[])];
   if(!nav.some(([id])=>id===active))active='dashboard';
-  const syncLabel=meta.enabled?(meta.lastError?'Sync offline':`Sync r${meta.revision}`):'Sync desativado';
+  const syncLabel=offline.dirty?`Sync pendente (${offline.pending.length})`:(meta.enabled?(meta.lastError?'Sync offline':`Sync r${meta.revision}`):'Sync desativado');
   app.innerHTML=`<div class="shell"><aside class="sidebar"><div class="brand"><span class="brandmark">LV</span><div><small>SISTEMA</small><strong>LOCADORA</strong></div></div><nav>${nav.map(([id,label])=>`<button data-nav="${id}" class="nav ${active===id?'active':''}">${label}</button>`).join('')}</nav><div class="session"><strong>${esc(sessionUser.name)}</strong><small>${esc(sessionUser.role)}</small><button id="logout">Sair</button></div></aside><main><header class="topbar"><span>${snapshot.rentals.filter(r=>r.status!=='devolucao').length} locações abertas</span><span>${snapshot.vehicles.length} veículos</span><span>${money(summary.openAmount)} em aberto</span><span>${alerts.length} alertas</span><span>${syncLabel}</span></header><section id="view" class="content"></section></main></div>`;
   app.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{active=b.dataset.nav;render();});
   app.querySelector('#logout').onclick=()=>{sessionUser=null;active='dashboard';render();};
@@ -70,7 +70,8 @@ async function bootstrapP2(){
     history.replaceState({},document.title,location.pathname+location.hash);
     await syncNow({silent:true});
   }
-  setInterval(()=>{const meta=syncMeta();if(meta.enabled&&meta.autoSync)void syncNow({silent:true});},15000);
+  window.addEventListener('online',()=>{const meta=syncMeta();if(meta.enabled)void syncNow({silent:false});});
+  setInterval(()=>{const meta=syncMeta();if(meta.enabled&&meta.autoSync&&navigator.onLine!==false)void syncNow({silent:true});},15000);
   render();
 }
 
