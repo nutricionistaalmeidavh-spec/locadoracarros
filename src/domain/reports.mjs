@@ -5,8 +5,8 @@ const round=value=>Math.round((Number(value||0)+Number.EPSILON)*100)/100;
 
 export function buildDashboard(input,now=new Date()){
   const snapshot=ensureP1Snapshot(input);const vehicles=snapshot.vehicles;const rentals=snapshot.rentals??[];const ledger=snapshot.ledger??[];
-  const receivables=ledger.filter(item=>item.kind==='receivable');const expenses=ledger.filter(item=>item.kind==='expense');
-  const grossRevenue=round(receivables.reduce((sum,item)=>sum+Number(item.amount||0),0));
+  const receivables=ledger.filter(item=>['receivable','billing_receivable'].includes(item.kind)&&item.status!=='cancelled');const expenses=ledger.filter(item=>item.kind==='expense');
+  const grossRevenue=round(receivables.reduce((sum,item)=>sum+Math.max(Number(item.amount||0),Number(item.paidAmount||0)),0));
   const received=round(receivables.reduce((sum,item)=>sum+Number(item.paidAmount||0),0));
   const expensesPaid=round(expenses.reduce((sum,item)=>sum+Number(item.paidAmount||0),0));
   const activeRentals=rentals.filter(item=>['retirada','em_uso'].includes(item.status));
@@ -21,7 +21,7 @@ export function buildDashboard(input,now=new Date()){
   return{
     fleetTotal:vehicles.length,availableVehicles:vehicles.filter(item=>item.availability==='disponivel').length,maintenanceVehicles:vehicles.filter(item=>item.availability==='manutencao').length,
     openRentals:rentals.filter(item=>item.status!=='devolucao'&&!item.cancelledAt).length,activeRentals:activeRentals.length,overdueRentals,
-    occupancyRate:vehicles.length?Math.round(activeRentals.length/vehicles.length*100):0,grossRevenue,received,openAmount:round(grossRevenue-received),expensesPaid,netCash:round(received-expensesPaid),
+    occupancyRate:vehicles.length?Math.round(activeRentals.length/vehicles.length*100):0,grossRevenue,received,openAmount:round(Math.max(0,grossRevenue-received)),expensesPaid,netCash:round(received-expensesPaid),
     averageTicket:receivables.length?round(grossRevenue/receivables.length):0,vehiclePerformance
   };
 }
