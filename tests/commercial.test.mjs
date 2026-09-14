@@ -5,6 +5,7 @@ import {
   createBillingPlan, installmentBalance, recordInstallmentPayment,
   delinquencySummary, recordCollectionAction
 } from '../src/domain/commercial.mjs';
+import { mergeSnapshots } from '../src/domain/sync.mjs';
 
 function base(){return {version:3,updatedAt:'2026-09-14T10:00:00Z',customers:[{id:'CLI-1',name:'Ana',document:'123',phone:'1199',active:true}],vehicles:[{id:'VEI-1',model:'Onix',plate:'ABC1D23',availability:'disponivel'}],rentals:[{id:'LOC-1',customerId:'CLI-1',vehicleId:'VEI-1',attendantId:'USR-1',pickupAt:'2026-09-01T10:00:00Z',returnAt:'2026-10-01T10:00:00Z',total:3000,dailyRate:100,status:'locado'}],users:[{id:'USR-1',name:'Victor'}],ledger:[],audit:[],expenses:[],settings:{companyName:'Locadora X',document:'00.000.000/0001-00'}};}
 
@@ -43,4 +44,16 @@ test('inadimplência: calcula aging, multa/juros e registra régua de cobrança'
   s=recordCollectionAction(s,{installmentId:installment.id,channel:'WhatsApp',note:'Prometeu pagar',promiseAt:'2026-09-20',nextActionAt:'2026-09-21'},'USR-1');
   assert.equal(s.collectionActions.length,1);
   assert.equal(s.collectionActions[0].customerId,'CLI-1');
+});
+
+test('sync: preserva coleções comerciais criadas em dispositivos diferentes',()=>{
+  const server=ensureCommercialSnapshot(base());
+  server.contractTemplates=[{id:'CTR-1',name:'A',body:'A',active:true,version:1,updatedAt:'2026-09-14T10:01:00Z'}];
+  const client=ensureCommercialSnapshot(base());
+  client.billingPlans=[{id:'PLN-1',rentalId:'LOC-1',amount:100,updatedAt:'2026-09-14T10:02:00Z'}];
+  client.billingInstallments=[{id:'PAR-1',planId:'PLN-1',rentalId:'LOC-1',customerId:'CLI-1',amount:100,paidAmount:0,status:'open',dueAt:'2026-09-20',updatedAt:'2026-09-14T10:02:00Z'}];
+  const merged=mergeSnapshots(server,client);
+  assert.equal(merged.contractTemplates.length,1);
+  assert.equal(merged.billingPlans.length,1);
+  assert.equal(merged.billingInstallments.length,1);
 });
