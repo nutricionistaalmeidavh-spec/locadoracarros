@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {can,seedUsers} from '../src/domain/auth.mjs';
+import {mergeSnapshots} from '../src/domain/sync.mjs';
+import {ensureCommercialSnapshot} from '../src/domain/commercial.mjs';
+
+test('atendente gerencia contratos, cobranças e inadimplência; vistoriador não',()=>{const users=seedUsers(),a=users.find(u=>u.role==='atendente'),v=users.find(u=>u.role==='vistoriador');for(const p of ['contracts.read','contracts.write','billing.read','billing.write','delinquency.read','delinquency.write'])assert.equal(can(a,p),true,p);for(const p of ['contracts.write','billing.read','delinquency.read'])assert.equal(can(v,p),false,p);});
+
+test('merge PC↔PWA inclui todas as coleções comerciais por entidade',()=>{const base=ensureCommercialSnapshot({version:3,updatedAt:'2026-09-14T10:00:00Z',customers:[],vehicles:[],rentals:[],expenses:[],users:[],ledger:[],audit:[]});const server={...base,updatedAt:'2026-09-14T10:10:00Z',contractTemplates:[{id:'CTR-1',name:'PC',updatedAt:'2026-09-14T10:10:00Z'}],billingPlans:[{id:'PLN-1',updatedAt:'2026-09-14T10:10:00Z'}],billingInstallments:[],billingPayments:[],issuedContracts:[],collectionActivities:[]};const client={...base,updatedAt:'2026-09-14T10:11:00Z',contractTemplates:[{id:'CTR-2',name:'PWA',updatedAt:'2026-09-14T10:11:00Z'}],billingPlans:[],billingInstallments:[{id:'PAR-1',updatedAt:'2026-09-14T10:11:00Z'}],billingPayments:[{id:'COB-1',updatedAt:'2026-09-14T10:11:00Z'}],issuedContracts:[{id:'EMI-1',updatedAt:'2026-09-14T10:11:00Z'}],collectionActivities:[{id:'REG-1',updatedAt:'2026-09-14T10:11:00Z'}]};const merged=mergeSnapshots(server,client);assert.equal(merged.contractTemplates.length,2);for(const key of ['billingPlans','billingInstallments','billingPayments','issuedContracts','collectionActivities'])assert.equal(merged[key].length,1,key);});
