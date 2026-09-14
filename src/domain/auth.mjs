@@ -1,6 +1,6 @@
 const PERMISSIONS = {
   admin: ['*'],
-  atendente: ['rental.read','rental.write','customer.read','customer.write','vehicle.read','vehicle.write','finance.read','finance.write','backup.create','inspection.read','maintenance.read','alerts.read','alerts.write','reports.read','documents.read','sync.read','sync.write'],
+  atendente: ['rental.read','rental.write','customer.read','customer.write','vehicle.read','vehicle.write','finance.read','finance.write','backup.create','inspection.read','maintenance.read','alerts.read','alerts.write','reports.read','documents.read','sync.read','sync.write','contracts.read','contracts.write','billing.read','billing.write','delinquency.read','delinquency.write'],
   vistoriador: ['rental.read','vehicle.read','inspection.read','inspection.write','maintenance.read','alerts.read','documents.read','sync.read','sync.write']
 };
 
