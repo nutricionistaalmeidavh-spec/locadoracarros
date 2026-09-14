@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
   ensureCommercialSnapshot, createContractTemplate, renderContractTemplate, issueContract,
   createBillingPlan, installmentBalance, recordInstallmentPayment,
-  delinquencySummary, recordCollectionAction
+  delinquencySummary, recordCollectionAction, cancelBillingPlan, billingAlerts,
+  filteredDelinquency, vehicleDelinquencyReport
 } from '../src/domain/commercial.mjs';
 import { mergeSnapshots } from '../src/domain/sync.mjs';
 
@@ -56,4 +57,27 @@ test('sync: preserva coleções comerciais criadas em dispositivos diferentes',(
   assert.equal(merged.contractTemplates.length,1);
   assert.equal(merged.billingPlans.length,1);
   assert.equal(merged.billingInstallments.length,1);
+});
+
+test('cobrança: bloqueia recorrência equivalente, permite cancelar e gera alertas',()=>{
+  let s=ensureCommercialSnapshot(base());
+  const draft={rentalId:'LOC-1',frequency:'monthly',firstDueAt:'2026-09-20',amount:500,occurrences:2,finePercent:2,interestMonthlyPercent:1};
+  s=createBillingPlan(s,draft,'USR-1');
+  assert.throws(()=>createBillingPlan(s,draft,'USR-1'),/recorrência ativa equivalente/);
+  const alerts=billingAlerts(s,'2026-09-18T12:00:00Z',7);
+  assert.equal(alerts.some(a=>a.status==='upcoming'),true);
+  const planId=s.billingPlans[0].id;
+  s=cancelBillingPlan(s,planId,'USR-1');
+  assert.equal(s.billingPlans[0].active,false);
+  assert.equal(s.billingInstallments.every(i=>i.status==='cancelled'),true);
+});
+
+test('inadimplência: filtra por cliente e agrega por veículo',()=>{
+  let s=ensureCommercialSnapshot(base());
+  s=createBillingPlan(s,{rentalId:'LOC-1',frequency:'monthly',firstDueAt:'2026-07-01',amount:1000,occurrences:1},'USR-1');
+  const rows=filteredDelinquency(s,{customerId:'CLI-1',minDays:30},'2026-09-14T12:00:00Z');
+  assert.equal(rows.length,1);
+  const vehicles=vehicleDelinquencyReport(s,'2026-09-14T12:00:00Z');
+  assert.equal(vehicles[0].vehicleId,'VEI-1');
+  assert.equal(vehicles[0].total>0,true);
 });
