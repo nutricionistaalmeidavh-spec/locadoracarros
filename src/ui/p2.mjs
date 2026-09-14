@@ -8,7 +8,7 @@ export function renderSync(view,ctx){
   const pairUrls=syncInfo?.pairingUrls??[];
   const isDesktop=Boolean(syncInfo?.available);
   const online=navigator.onLine!==false;
-  view.innerHTML=`<div class="heading"><div><small>PC ↔ MOBILE</small><h1>Sincronização local</h1></div><span class="badge">${isDesktop?'PC servidor':'PWA / Mobile'}</span></div>
+  view.innerHTML=`<div class="heading"><div><small>PC ↔ MOBILE</small><h1>Sincronização local</h1></div><span class="badge">${isDesktop?'PC servidor':'Web / Mobile'}</span></div>
   <div class="sync-grid">
     <section class="panel"><h2>Configuração</h2><p class="mobile-note">A sincronização funciona pela mesma rede Wi-Fi/LAN. O PC mantém o ponto de encontro dos dados e o navegador no celular mantém os dados locais.</p>
       ${!isDesktop?`<div class="pair-import"><label>Link de pareamento<input id="pair-link" placeholder="Cole aqui o link exibido no PC"></label><button type="button" class="secondary" id="apply-pair">Aplicar link</button></div>`:''}
@@ -34,7 +34,7 @@ export function renderSync(view,ctx){
       <p><span>Device ID</span><code>${esc(meta.deviceId)}</code></p>
     </div></section>
   </div>
-  ${isDesktop?`<section class="panel"><h2>Abrir no celular</h2><p class="mobile-note">Com o celular conectado à mesma rede Wi-Fi/LAN do PC, abra um dos links abaixo no navegador. O sistema será carregado na interface mobile e fará o pareamento automaticamente pelo token do link.</p><div class="pair-list">${pairUrls.length?pairUrls.map((url,i)=>`<div class="pair-link"><code>${esc(url)}</code><button data-copy="${esc(url)}">Copiar ${i+1}</button></div>`).join(''):'<div class="empty">Nenhum endereço LAN detectado. Verifique a conexão de rede do PC.</div>'}</div><p class="mobile-note">Para acessar e sincronizar com o PC, mantenha o celular na mesma rede local.</p></section>`:''}`;
+  ${isDesktop?`<section class="panel"><h2>Abrir no celular</h2><p class="mobile-note">Com o celular conectado à mesma rede Wi-Fi/LAN do PC, abra um dos links abaixo no navegador. O sistema abre direto na versão web responsiva e faz o pareamento automaticamente pelo token do link.</p><div class="pair-list">${pairUrls.length?pairUrls.map((url,i)=>`<div class="pair-link"><code>${esc(url)}</code><button data-copy="${esc(url)}">Copiar ${i+1}</button></div>`).join(''):'<div class="empty">Nenhum endereço LAN detectado. Verifique a conexão de rede do PC.</div>'}</div><p class="mobile-note">Para acessar e sincronizar com o PC, mantenha o celular na mesma rede local.</p></section>`:''}`;
 
   const form=view.querySelector('#sync-form');
   form.onsubmit=e=>{e.preventDefault();const fd=new FormData(form);syncClient.configure({deviceName:fd.get('deviceName'),serverUrl:fd.get('serverUrl'),token:fd.get('token'),enabled:form.elements.enabled.checked,autoSync:form.elements.autoSync.checked});toast('Configuração de sincronização salva.');renderSync(view,ctx);};
