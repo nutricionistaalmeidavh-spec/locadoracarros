@@ -1,0 +1,22 @@
+import { can } from '../domain/auth.mjs';
+import { addExpense, getFinancialSummary, registerPayment } from '../domain/rental.mjs';
+import { closeModal, esc, modal, money, toast } from './common.mjs';
+
+export function renderFinanceiro(view,ctx){
+  const {snapshot,sessionUser}=ctx;
+  if(!can(sessionUser,'finance.read')){view.innerHTML='<div class="empty">Sem permissão.</div>';return;}
+  const s=getFinancialSummary(snapshot);
+  view.innerHTML=`<div class="heading"><div><small>FINANCEIRO</small><h1>Receitas e despesas</h1></div>${can(sessionUser,'finance.write')?'<button id="new-expense" class="primary">Nova despesa</button>':''}</div><div class="cards"><article><small>Receita prevista</small><strong>${money(s.grossRevenue)}</strong></article><article><small>Recebido</small><strong>${money(s.paidAmount)}</strong></article><article><small>Em aberto</small><strong>${money(s.openAmount)}</strong></article><article><small>Caixa líquido</small><strong>${money(s.netCash)}</strong></article></div><section class="panel"><h2>Contas a receber</h2><div class="table-wrap"><table><thead><tr><th>Locação</th><th>Valor</th><th>Recebido</th><th>Saldo</th><th>Status</th><th></th></tr></thead><tbody>${snapshot.ledger.filter(e=>e.kind==='receivable').map(e=>`<tr><td>${esc(e.rentalId)}</td><td>${money(e.amount)}</td><td>${money(e.paidAmount)}</td><td>${money(e.amount-e.paidAmount)}</td><td>${esc(e.status)}</td><td>${can(sessionUser,'finance.write')&&e.status!=='paid'?`<button data-pay="${e.rentalId}">Receber</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">Sem contas a receber.</td></tr>'}</tbody></table></div></section><section class="panel"><h2>Despesas</h2><div class="table-wrap"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Veículo</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${snapshot.expenses.map(e=>`<tr><td>${esc(e.description)}</td><td>${esc(e.category)}</td><td>${esc(e.vehicleId||'-')}</td><td>${money(e.amount)}</td><td>${e.paid?'Pago':'Aberto'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sem despesas.</td></tr>'}</tbody></table></div></section>`;
+  view.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>showPayment(b.dataset.pay,ctx));
+  view.querySelector('#new-expense')?.addEventListener('click',()=>showExpense(ctx));
+}
+
+function showPayment(rentalId,ctx){
+  const {snapshot,sessionUser,save}=ctx,rental=snapshot.rentals.find(r=>r.id===rentalId),received=rental.payments.reduce((a,p)=>a+p.amount,0);
+  modal('Registrar recebimento',`<form id="pay-form" class="form-grid"><label>Saldo<input value="${(rental.total-received).toFixed(2)}" disabled></label><label>Valor<input name="amount" type="number" min="0.01" max="${rental.total-received}" step="0.01" required></label><label>Forma<select name="method"><option>PIX</option><option>Dinheiro</option><option>Crédito</option><option>Débito</option><option>Boleto</option></select></label><div class="full modal-actions"><button type="button" data-close>Cancelar</button><button class="primary">Confirmar</button></div></form>`,()=>{const f=document.querySelector('#pay-form');f.onsubmit=e=>{e.preventDefault();const fd=Object.fromEntries(new FormData(f));try{save(registerPayment(snapshot,rentalId,Number(fd.amount),fd.method,sessionUser.id));closeModal();toast('Recebimento registrado.');}catch(err){toast(err.message)}};});
+}
+
+function showExpense(ctx){
+  const {snapshot,sessionUser,save}=ctx;
+  modal('Nova despesa',`<form id="expense-form" class="form-grid"><label>Descrição<input name="description" required></label><label>Categoria<input name="category" required></label><label>Valor<input name="amount" type="number" min="0.01" step="0.01" required></label><label>Vencimento<input name="dueAt" type="date" required></label><label>Veículo<select name="vehicleId"><option value="">Geral</option>${snapshot.vehicles.map(v=>`<option value="${v.id}">${esc(v.model)}</option>`).join('')}</select></label><label class="check"><input name="paid" type="checkbox"> Já paga</label><div class="full modal-actions"><button type="button" data-close>Cancelar</button><button class="primary">Salvar</button></div></form>`,()=>{const f=document.querySelector('#expense-form');f.onsubmit=e=>{e.preventDefault();const fd=Object.fromEntries(new FormData(f));fd.paid=f.elements.paid.checked;save(addExpense(snapshot,fd,sessionUser.id));closeModal();toast('Despesa registrada.');};});
+}
