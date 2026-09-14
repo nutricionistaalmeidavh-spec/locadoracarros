@@ -1,7 +1,7 @@
 const PERMISSIONS = {
   admin: ['*'],
-  atendente: ['rental.read','rental.write','customer.read','customer.write','vehicle.read','vehicle.write','finance.read','finance.write','backup.create','inspection.read','maintenance.read','alerts.read','alerts.write','reports.read','documents.read','sync.read','sync.write'],
-  vistoriador: ['rental.read','vehicle.read','inspection.read','inspection.write','maintenance.read','alerts.read','documents.read','sync.read','sync.write']
+  atendente: ['rental.read','rental.write','customer.read','customer.write','vehicle.read','vehicle.write','finance.read','finance.write','billing.read','billing.write','contracts.read','contracts.write','backup.create','inspection.read','maintenance.read','alerts.read','alerts.write','reports.read','documents.read','sync.read','sync.write'],
+  vistoriador: ['rental.read','vehicle.read','inspection.read','inspection.write','maintenance.read','alerts.read','documents.read','contracts.read','sync.read','sync.write']
 };
 
 export function seedUsers() {
