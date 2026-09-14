@@ -1,5 +1,5 @@
 import { authenticate,can } from './domain/auth.mjs';
-import { getFinancialSummary } from './domain/rental.mjs';
+import { getFinancialSummary } from './domain/commercial-finance.mjs';
 import { buildOperationalAlerts } from './domain/alerts.mjs';
 import { createRepository } from './storage/repository.mjs';
 import { createSyncClient } from './sync/client.mjs';
