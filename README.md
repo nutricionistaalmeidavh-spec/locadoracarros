@@ -5,10 +5,12 @@ Sistema standalone de gestão de locação de veículos da ArtiSys.
 ## Escopo final
 
 - Desktop Windows em Electron.
-- Mobile via PWA responsiva.
+- Acesso mobile via navegador responsivo na mesma rede Wi-Fi/LAN do PC.
+- PWA completa quando executada em contexto seguro HTTPS.
 - Uma única operação da locadora: **sem multi-tenant**.
-- Dados e arquivos persistentes sempre em **SQLite local**.
-- Sincronização PC ↔ PWA opcional pela rede configurada.
+- Desktop com dados persistentes em **SQLite local**.
+- No navegador: SQLite/WASM + OPFS quando disponível; fallback automático para IndexedDB em acesso LAN por HTTP.
+- Sincronização PC ↔ navegador opcional pela rede configurada.
 - Nenhum backend de dados obrigatório.
 
 ## Funcionalidades
@@ -29,14 +31,15 @@ Sistema standalone de gestão de locação de veículos da ArtiSys.
 - Rentabilidade por veículo.
 
 ### P2
-- PWA responsiva para celular/tablet.
-- Fila offline persistente.
-- Pareamento PC ↔ PWA por endereço + token.
+- Interface responsiva para celular/tablet.
+- Persistência local no navegador.
+- Fila offline persistente quando o navegador/contexto permitir.
+- Pareamento PC ↔ navegador por endereço + token.
 - Sincronização manual ou automática.
 - Revisões e cópia de recuperação em conflitos.
 - Merge por entidade para preservar alterações concorrentes em clientes, veículos, locações, vistorias, manutenção, financeiro e auditoria.
 
-## Persistência SQLite
+## Persistência local
 
 ### Desktop
 
@@ -57,13 +60,25 @@ Nele ficam:
 
 Não são mantidos arquivos JSON paralelos para estado persistente. Instalações que ainda possuírem os antigos `sync-config.json`/`sync-state.json` têm esses sidecars absorvidos pelo SQLite e removidos.
 
-### PWA
+### Web / celular
 
-A PWA usa SQLite/WASM e grava o arquivo `locadora.sqlite` no armazenamento privado do navegador via OPFS. O runtime SQLite é vendorizado no build e funciona offline depois da instalação da PWA.
+Ao abrir um dos links exibidos em **PC ↔ Mobile**, o navegador usa armazenamento local próprio:
 
-A PWA deve ser publicada em **HTTPS** para habilitar Service Worker, OPFS e instalação adequada no celular.
+- em HTTPS com OPFS disponível: SQLite/WASM persistido em `locadora.sqlite`;
+- em acesso LAN por HTTP: fallback automático para IndexedDB, permitindo usar o sistema normalmente pelo navegador sem depender de HTTPS.
 
-## Preparar a PWA
+O Service Worker e a instalação PWA completa continuam condicionados a um contexto seguro HTTPS, conforme as regras do navegador. Isso não impede o uso web local pelo link LAN.
+
+## Uso no celular pela rede local
+
+1. Instale e abra o EXE no PC.
+2. Conecte PC e celular à mesma rede Wi-Fi/LAN.
+3. No sistema, abra **PC ↔ Mobile**.
+4. Copie um dos links exibidos.
+5. Abra o link no navegador do celular.
+6. O token do link realiza o pareamento e a sincronização com o PC.
+
+## Preparar os arquivos web
 
 ```bash
 npm install
