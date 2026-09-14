@@ -1,7 +1,7 @@
 const PERMISSIONS = {
   admin: ['*'],
-  atendente: ['rental.read','rental.write','customer.read','customer.write','vehicle.read','finance.read','finance.write','backup.create'],
-  vistoriador: ['rental.read','vehicle.read','inspection.write']
+  atendente: ['rental.read','rental.write','customer.read','customer.write','vehicle.read','vehicle.write','finance.read','finance.write','backup.create','inspection.read','maintenance.read','alerts.read','alerts.write','reports.read','documents.read'],
+  vistoriador: ['rental.read','vehicle.read','inspection.read','inspection.write','maintenance.read','alerts.read','documents.read']
 };
 
 export function seedUsers() {
@@ -12,25 +12,7 @@ export function seedUsers() {
   ];
 }
 
-export function can(user, permission) {
-  if (!user?.active) return false;
-  const list = PERMISSIONS[user.role] ?? [];
-  return list.includes('*') || list.includes(permission);
-}
-
-export function requirePermission(user, permission) {
-  if (!can(user, permission)) throw new Error(`Permissão negada: ${permission}`);
-}
-
-async function sha256(text) {
-  const data = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2,'0')).join('');
-}
-
-export async function authenticate(users, username, password) {
-  const normalized = String(username ?? '').trim().toLowerCase();
-  const user = users.find((item) => item.active && item.username.toLowerCase() === normalized);
-  if (!user) return null;
-  return (await sha256(String(password ?? ''))) === user.passwordHash ? user : null;
-}
+export function can(user, permission) { if (!user?.active) return false; const list = PERMISSIONS[user.role] ?? []; return list.includes('*') || list.includes(permission); }
+export function requirePermission(user, permission) { if (!can(user, permission)) throw new Error(`Permissão negada: ${permission}`); }
+async function sha256(text) { const data = new TextEncoder().encode(text); const digest = await crypto.subtle.digest('SHA-256', data); return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2,'0')).join(''); }
+export async function authenticate(users, username, password) { const normalized = String(username ?? '').trim().toLowerCase(); const user = users.find((item) => item.active && item.username.toLowerCase() === normalized); if (!user) return null; return (await sha256(String(password ?? ''))) === user.passwordHash ? user : null; }

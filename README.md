@@ -4,16 +4,27 @@ Sistema standalone de gestão de locação de veículos da ArtiSys.
 
 Este repositório foi separado do antigo monorepo `PDVNexus` para que a Locadora evolua de forma independente.
 
-## P0 entregue
+## P0
 
 - Agenda/reservas com bloqueio de conflito por veículo e período.
 - Login local com RBAC para `admin`, `atendente` e `vistoriador`.
-- Financeiro determinístico com contas a receber, pagamentos parciais, despesas e caixa líquido.
+- Financeiro com contas a receber, pagamentos parciais, despesas e caixa líquido.
 - Auditoria de ações críticas.
-- Backup v2 com SHA-256 e validação de integridade.
+- Backup verificável com SHA-256.
 - Migração de snapshot/backup legado 0.1.5.
-- Cadastro de clientes, frota, contratos, reservas, recebimentos e despesas.
-- Interface responsiva web/desktop-friendly, sem serviço pago obrigatório.
+
+## P1
+
+- Dashboard operacional e financeiro com ocupação, atrasos, ticket médio e rentabilidade por veículo.
+- Vistorias de retirada/devolução com checklist obrigatório, fotos, quilometragem, combustível, avarias e PDF.
+- Manutenção preventiva/corretiva por data ou quilometragem, bloqueio automático da frota e custo vinculado ao veículo/financeiro.
+- Alertas para devolução atrasada, manutenção vencida, seguro/licenciamento/inspeção e CNH.
+- Cadastro complementar de validade da CNH e documentos do veículo.
+- Contrato, recibo e relatório de vistoria em PDF real, sem serviço externo.
+- Persistência v3 com migração automática dos dados P0/v2.
+- RBAC ampliado para vistoria, manutenção, alertas, documentos e backup.
+
+A implementação segue as capacidades já catalogadas no `utilidades` (`artisys-checklists`, `artisys-alerts`, `artisys-pdf`, `artisys-dashboard`/reporting) e os padrões de dashboard, tabelas, formulários, diálogos e feedback do `frontEnds`, mantendo o runtime principal R$ 0 / local / self-hosted.
 
 ## Acesso inicial
 
@@ -24,8 +35,6 @@ Troque as credenciais no processo de implantação real.
 
 ## Executar
 
-O app é estático e não depende de backend obrigatório:
-
 ```bash
 npm test
 npm run check
@@ -34,10 +43,23 @@ npm run serve
 
 Depois acesse `http://localhost:4173`.
 
+## Desktop Windows
+
+```bash
+npm install
+npm run desktop
+npm run dist
+```
+
+O instalador NSIS x64 é gerado em `release/`.
+
 ## Dados
 
-O armazenamento principal usa `localStorage` com a chave `artisys:locadora:store:v2`. Se existir a chave antiga `aluguel-veiculo:store:v1`, a migração para v2 acontece automaticamente.
+O armazenamento principal usa `localStorage` com a chave `artisys:locadora:store:v3`.
 
-## Origem
+Na primeira abertura, o sistema migra automaticamente:
 
-A base funcional foi migrada da Software Factory/`PDVNexus`, preservando os domínios de clientes, frota, locações, financeiro e documentos, agora desacoplados do PDV.
+- `artisys:locadora:store:v2` (P0)
+- `aluguel-veiculo:store:v1` (versão 0.1.5)
+
+sem apagar as chaves anteriores.

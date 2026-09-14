@@ -1,29 +1,32 @@
 import { authenticate, can } from './domain/auth.mjs';
 import { getFinancialSummary } from './domain/rental.mjs';
+import { buildOperationalAlerts } from './domain/alerts.mjs';
 import { createRepository } from './storage/repository.mjs';
 import { esc, money } from './ui/common.mjs';
 import { renderReservas } from './ui/reservas.mjs';
 import { renderClientes, renderFrota } from './ui/cadastros.mjs';
 import { renderFinanceiro } from './ui/financeiro.mjs';
 import { renderAuditoria, renderBackup } from './ui/system.mjs';
+import { renderDashboard, renderVistorias, renderManutencao, renderAlertas, renderDocumentos } from './ui/p1.mjs';
 
 const repository=createRepository();
-let snapshot=repository.load(),sessionUser=null,active='reservas';
+let snapshot=repository.load(),sessionUser=null,active='dashboard';
 const app=document.querySelector('#app');
 
 function save(next){snapshot=repository.save(next);render();}
-function replaceSnapshot(next){snapshot=next;render();}
+function replaceSnapshot(next){snapshot=repository.save(next);render();}
 function context(){return{snapshot,sessionUser,save,replaceSnapshot,repository};}
 
 function render(){
   if(!sessionUser)return renderLogin();
-  const summary=getFinancialSummary(snapshot);
-  const nav=[['reservas','Reservas'],['clientes','Clientes'],['frota','Frota'],...(can(sessionUser,'finance.read')?[['financeiro','Financeiro']]:[]),['auditoria','Auditoria'],['backup','Backup e Config.']];
-  app.innerHTML=`<div class="shell"><aside class="sidebar"><div class="brand"><span class="brandmark">LV</span><div><small>SISTEMA</small><strong>LOCADORA</strong></div></div><nav>${nav.map(([id,label])=>`<button data-nav="${id}" class="nav ${active===id?'active':''}">${label}</button>`).join('')}</nav><div class="session"><strong>${esc(sessionUser.name)}</strong><small>${esc(sessionUser.role)}</small><button id="logout">Sair</button></div></aside><main><header class="topbar"><span>${snapshot.rentals.filter(r=>r.status!=='devolucao').length} locações abertas</span><span>${snapshot.vehicles.length} veículos</span><span>${money(summary.openAmount)} em aberto</span><span>Dados locais v2</span></header><section id="view" class="content"></section></main></div>`;
+  const summary=getFinancialSummary(snapshot),alerts=buildOperationalAlerts(snapshot);
+  const nav=[['dashboard','Dashboard'],['reservas','Reservas'],['clientes','Clientes'],['frota','Frota'],...(can(sessionUser,'inspection.read')||can(sessionUser,'inspection.write')?[['vistorias','Vistorias']]:[]),...(can(sessionUser,'maintenance.read')?[['manutencao','Manutenção']]:[]),...(can(sessionUser,'finance.read')?[['financeiro','Financeiro']]:[]),...(can(sessionUser,'alerts.read')?[['alertas',`Alertas${alerts.length?` (${alerts.length})`:''}`]]:[]),...(can(sessionUser,'documents.read')?[['documentos','Documentos']]:[]),...(sessionUser.role==='admin'?[['auditoria','Auditoria']]:[]),...(can(sessionUser,'backup.create')||sessionUser.role==='admin'?[['backup','Backup e Config.']]:[])];
+  if(!nav.some(([id])=>id===active))active='dashboard';
+  app.innerHTML=`<div class="shell"><aside class="sidebar"><div class="brand"><span class="brandmark">LV</span><div><small>SISTEMA</small><strong>LOCADORA</strong></div></div><nav>${nav.map(([id,label])=>`<button data-nav="${id}" class="nav ${active===id?'active':''}">${label}</button>`).join('')}</nav><div class="session"><strong>${esc(sessionUser.name)}</strong><small>${esc(sessionUser.role)}</small><button id="logout">Sair</button></div></aside><main><header class="topbar"><span>${snapshot.rentals.filter(r=>r.status!=='devolucao').length} locações abertas</span><span>${snapshot.vehicles.length} veículos</span><span>${money(summary.openAmount)} em aberto</span><span>${alerts.length} alertas</span><span>Dados locais v3</span></header><section id="view" class="content"></section></main></div>`;
   app.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{active=b.dataset.nav;render();});
-  app.querySelector('#logout').onclick=()=>{sessionUser=null;active='reservas';render();};
-  const views={reservas:renderReservas,clientes:renderClientes,frota:renderFrota,financeiro:renderFinanceiro,auditoria:renderAuditoria,backup:renderBackup};
-  (views[active]??renderReservas)(app.querySelector('#view'),context());
+  app.querySelector('#logout').onclick=()=>{sessionUser=null;active='dashboard';render();};
+  const views={dashboard:renderDashboard,reservas:renderReservas,clientes:renderClientes,frota:renderFrota,vistorias:renderVistorias,manutencao:renderManutencao,financeiro:renderFinanceiro,alertas:renderAlertas,documentos:renderDocumentos,auditoria:renderAuditoria,backup:renderBackup};
+  (views[active]??renderDashboard)(app.querySelector('#view'),context());
 }
 
 function renderLogin(){
