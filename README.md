@@ -83,3 +83,31 @@ No aplicativo desktop, abra **PC ↔ Mobile** e copie um dos links de pareamento
 O PC usa a porta `4174` quando disponível; se ela estiver ocupada, escolhe automaticamente outra porta e mostra o endereço correto na tela.
 
 Não há multi-tenant nesta versão: existe uma única base da Locadora sendo sincronizada entre os dispositivos autorizados.
+
+## P2.1 — Mobile offline-first
+
+Além da PWA em rede local, o repositório inclui um shell mobile nativo em `mobile/` usando Capacitor.
+
+- O app Android/iOS carrega os arquivos do sistema do próprio aparelho, sem depender do endereço do PC para abrir.
+- Reservas, clientes, frota, vistorias, manutenção e financeiro continuam disponíveis quando o aparelho estiver sem Wi‑Fi/internet.
+- Cada alteração local gera uma pendência persistente de sincronização.
+- Quando o PC volta a ficar acessível, a sincronização manual ou automática envia a versão pendente e limpa a fila somente após confirmação.
+- A tela `PC ↔ Mobile` mostra rede, quantidade de alterações pendentes e desde quando estão aguardando sincronização.
+- O app aceita diretamente o link de pareamento gerado pelo PC.
+- Não foi introduzido multi-tenant nem backend obrigatório.
+
+### Preparar o app mobile
+
+```bash
+cd mobile
+npm install
+npm run prepare:web
+npx cap add android
+# no macOS, opcionalmente:
+npx cap add ios
+npm run sync
+```
+
+Depois, `npm run android` abre o projeto Android e `npm run ios` abre o projeto iOS.
+
+O shell usa Capacitor 8.5.2 e mantém o servidor LAN do PC como ponto de sincronização; a execução offline não depende dele.
