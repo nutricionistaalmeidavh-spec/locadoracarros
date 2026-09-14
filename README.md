@@ -42,14 +42,17 @@ Sistema standalone de gestão de locação de veículos da ArtiSys.
 ### P3 — Contratos, recorrência e inadimplência
 - Editor de modelos de contrato com versão, ativo/inativo, duplicação e modelo padrão.
 - Variáveis dinâmicas de locadora, cliente, CNH, veículo, locação e atendente.
+- Prévia com dados reais de uma locação antes da emissão; variáveis desconhecidas são sinalizadas e bloqueiam a emissão.
 - Emissão de contrato com conteúdo congelado no histórico e PDF próprio da versão emitida.
 - Cobranças recorrentes diária, semanal, quinzenal, mensal e personalizada.
 - Geração de parcelas futuras com tratamento de fim de mês.
 - Multa, juros mensais, pagamentos parciais e atualização do saldo.
-- Painel de inadimplência com total vencido, clientes, atraso médio e aging 1–7, 8–15, 16–30, 31–60 e 60+ dias.
+- Recebíveis recorrentes entram no Financeiro, dashboard, caixa e relatórios sem perder o detalhamento da tela de Cobranças.
+- Painel de inadimplência com total vencido, clientes, vencendo hoje, próximos 7 dias, atraso médio e aging 1–7, 8–15, 16–30, 31–60 e 60+ dias.
 - Régua de cobrança com canal, observação, promessa de pagamento e próxima ação.
-- Relatório de maiores devedores.
+- Relatórios de devedores por cliente/veículo.
 - Auditoria e sincronização PC ↔ navegador também para contratos, parcelas, planos recorrentes e ações de cobrança.
+- Snapshots existentes são normalizados automaticamente para a estrutura comercial v4 ao carregar do SQLite.
 
 ## Persistência local
 
@@ -80,7 +83,7 @@ Ao abrir um dos links exibidos em **PC ↔ Mobile**, o navegador usa armazenamen
 ## Uso no celular pela rede local
 
 1. Instale e abra o EXE no PC.
-2. Conecte PC e celular à mesma rede Wi-Fi/LAN.
+2. Conecte PC e celular à mesma rede Wi-Fi/LAN do PC.
 3. No sistema, abra **PC ↔ Mobile**.
 4. Copie um dos links exibidos.
 5. Abra o link no navegador do celular.
