@@ -1,66 +1,52 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-const os = require('node:os');
-const crypto = require('node:crypto');
-const fs = require('node:fs/promises');
-const { startSyncServer } = require('./sync-server.cjs');
+const path=require('node:path');
+const os=require('node:os');
+const crypto=require('node:crypto');
+const fs=require('node:fs');
+const { SqliteStore }=require('./sqlite-store.cjs');
+const { startSyncServer }=require('./sync-server.cjs');
 
-let syncInfo=null;
+let syncInfo=null,store=null,syncServer=null;
 
-async function getOrCreateToken(userData){
-  const file=path.join(userData,'sync-config.json');
-  try{const parsed=JSON.parse(await fs.readFile(file,'utf8'));if(parsed?.token)return parsed.token;}catch{}
-  const token=crypto.randomBytes(12).toString('hex').toUpperCase();
-  await fs.mkdir(userData,{recursive:true});
-  await fs.writeFile(file,JSON.stringify({token},null,2),'utf8');
-  return token;
+function tokenFromSqlite(){
+  const current=store.get('sync:token');if(current)return current;
+  const token=crypto.randomBytes(18).toString('hex').toUpperCase();store.set('sync:token',token);return token;
+}
+
+function migrateLegacySidecars(userData){
+  for(const [name,key] of [['sync-config.json','legacy:sync-config'],['sync-state.json','sync:server-state']]){
+    const file=path.join(userData,name);if(!fs.existsSync(file))continue;
+    try{const parsed=JSON.parse(fs.readFileSync(file,'utf8'));if(name==='sync-config.json'&&parsed?.token&&!store.get('sync:token'))store.set('sync:token',parsed.token);if(name==='sync-state.json'&&!store.get(key))store.setJson(key,parsed);fs.unlinkSync(file);}catch{}
+  }
 }
 
 function lanAddresses(){
-  const values=[];
-  for(const entries of Object.values(os.networkInterfaces()))for(const entry of entries||[])if(entry.family==='IPv4'&&!entry.internal)values.push(entry.address);
-  return [...new Set(values)];
+  const values=[];for(const entries of Object.values(os.networkInterfaces()))for(const entry of entries||[])if(entry.family==='IPv4'&&!entry.internal)values.push(entry.address);return [...new Set(values)];
 }
 
 async function startLanSync(){
   const userData=app.getPath('userData');
-  const token=await getOrCreateToken(userData);
-  const rootDir=app.getAppPath();
-  const stateFile=path.join(userData,'sync-state.json');
-  let server;
-  try{server=await startSyncServer({host:'0.0.0.0',port:4174,token,rootDir,stateFile});}
-  catch(error){if(error?.code!=='EADDRINUSE')throw error;server=await startSyncServer({host:'0.0.0.0',port:0,token,rootDir,stateFile});}
-  const urls=lanAddresses().map(address=>`http://${address}:${server.port}`);
-  syncInfo={available:true,port:server.port,token,localUrl:`http://127.0.0.1:${server.port}`,urls,pairingUrls:urls.map(url=>`${url}/?pair=${encodeURIComponent(token)}`)};
-  app.once('before-quit',()=>{void server.close();});
+  store=new SqliteStore(path.join(userData,'locadora.sqlite'));
+  migrateLegacySidecars(userData);
+  const token=tokenFromSqlite(),rootDir=app.getAppPath();
+  try{syncServer=await startSyncServer({host:'0.0.0.0',port:4174,token,rootDir,store});}
+  catch(error){if(error?.code!=='EADDRINUSE')throw error;syncServer=await startSyncServer({host:'0.0.0.0',port:0,token,rootDir,store});}
+  const urls=lanAddresses().map(address=>`http://${address}:${syncServer.port}`);
+  syncInfo={available:true,port:syncServer.port,token,localUrl:`http://127.0.0.1:${syncServer.port}`,urls,pairingUrls:urls.map(url=>`${url}/?pair=${encodeURIComponent(token)}`),database:path.join(userData,'locadora.sqlite')};
 }
 
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 1440,
-    height: 920,
-    minWidth: 1024,
-    minHeight: 680,
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload:path.join(__dirname,'preload.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true
-    }
-  });
-  win.loadFile(path.join(__dirname, '..', 'index.html'));
-}
-
-app.whenReady().then(async () => {
-  await startLanSync();
+function registerIpc(){
   ipcMain.handle('locadora:sync-info',()=>syncInfo);
-  createWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
+  ipcMain.handle('locadora:db:get',(_event,key)=>store.get(key));
+  ipcMain.handle('locadora:db:set',(_event,key,value)=>store.set(key,value));
+  ipcMain.handle('locadora:db:remove',(_event,key)=>store.remove(key));
+}
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+function createWindow(){
+  const win=new BrowserWindow({width:1440,height:920,minWidth:1024,minHeight:680,autoHideMenuBar:true,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  win.loadURL(syncInfo.localUrl);
+}
+
+app.whenReady().then(async()=>{await startLanSync();registerIpc();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});});
+app.on('before-quit',()=>{try{syncServer?.close();}catch{}try{store?.close();}catch{}});
+app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
