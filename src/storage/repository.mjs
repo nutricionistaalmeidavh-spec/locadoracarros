@@ -1,5 +1,5 @@
 import { createEmptySnapshot, migrateLegacySnapshot } from '../domain/rental.mjs';
-import { ensureP1Snapshot } from '../domain/p1.mjs';
+import { ensureCommercialSnapshot } from '../domain/commercial.mjs';
 import { syncMaintenanceAvailability } from '../domain/maintenance.mjs';
 import { createPwaSqliteStore } from './pwa-sqlite.mjs';
 
@@ -7,9 +7,9 @@ export const STORE_KEY='app:snapshot:v3';
 
 function normalize(raw){
   const source=typeof raw==='string'?JSON.parse(raw):raw;
-  if(!source)return syncMaintenanceAvailability(ensureP1Snapshot(createEmptySnapshot()));
+  if(!source)return syncMaintenanceAvailability(ensureCommercialSnapshot(createEmptySnapshot()));
   const base=Number(source?.version)>=2&&Array.isArray(source?.ledger)&&Array.isArray(source?.audit)?source:migrateLegacySnapshot(source);
-  return syncMaintenanceAvailability(ensureP1Snapshot(base));
+  return syncMaintenanceAvailability(ensureCommercialSnapshot(base));
 }
 
 async function createDesktopStore(){
@@ -28,7 +28,7 @@ export async function createRepository(){
   const storage=await createDesktopStore()??await createPwaSqliteStore();
   const raw=await storage.get(STORE_KEY);
   let cache=normalize(raw);
-  if(raw==null)await storage.set(STORE_KEY,JSON.stringify(cache));
+  if(raw==null||Number((typeof raw==='string'?JSON.parse(raw):raw)?.version||0)<4)await storage.set(STORE_KEY,JSON.stringify(cache));
   let writeQueue=Promise.resolve();
 
   const persist=(value)=>{
