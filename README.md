@@ -63,3 +63,23 @@ Na primeira abertura, o sistema migra automaticamente:
 - `aluguel-veiculo:store:v1` (versão 0.1.5)
 
 sem apagar as chaves anteriores.
+
+## P2 — PC ↔ Mobile (sem multi-tenant)
+
+- Acesso mobile responsivo pela mesma rede do PC.
+- Servidor LAN embutido no Electron, sem nuvem e sem serviço pago.
+- Pareamento por link + token persistente do PC.
+- Sincronização manual ou automática entre PC e celular.
+- Revisões de sincronização e resolução determinística de conflito por `updatedAt`.
+- Em conflito com versão remota mais nova, a cópia local anterior é preservada para recuperação.
+- PWA com manifest e service worker quando o navegador estiver em contexto seguro; em LAN HTTP o acesso mobile continua funcionando como web app local.
+- Ponte `ReactNativeWebView.postMessage` mantida para eventual wrapper mobile sem alterar o domínio.
+- RBAC de sincronização disponível para Admin, Atendente e Vistoriador.
+
+### Usar no celular
+
+No aplicativo desktop, abra **PC ↔ Mobile** e copie um dos links de pareamento. O celular precisa estar na mesma rede do PC. Ao abrir o link, o token é salvo no dispositivo e removido da barra de endereço.
+
+O PC usa a porta `4174` quando disponível; se ela estiver ocupada, escolhe automaticamente outra porta e mostra o endereço correto na tela.
+
+Não há multi-tenant nesta versão: existe uma única base da Locadora sendo sincronizada entre os dispositivos autorizados.
