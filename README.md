@@ -9,7 +9,7 @@ Sistema standalone de gestão de locação de veículos da ArtiSys.
 - PWA completa quando executada em contexto seguro HTTPS.
 - Uma única operação da locadora: **sem multi-tenant**.
 - Desktop com dados persistentes em **SQLite local**.
-- No navegador: SQLite/WASM + OPFS quando disponível; fallback automático para IndexedDB em acesso LAN por HTTP.
+- No navegador: SQLite/WASM + OPFS quando disponível; fallback persistente do arquivo SQLite em armazenamento privado do navegador quando OPFS não estiver disponível.
 - Sincronização PC ↔ navegador opcional pela rede configurada.
 - Nenhum backend de dados obrigatório.
 
@@ -39,6 +39,18 @@ Sistema standalone de gestão de locação de veículos da ArtiSys.
 - Revisões e cópia de recuperação em conflitos.
 - Merge por entidade para preservar alterações concorrentes em clientes, veículos, locações, vistorias, manutenção, financeiro e auditoria.
 
+### P3 — Contratos, recorrência e inadimplência
+- Editor de modelos de contrato com versão, ativo/inativo, duplicação e modelo padrão.
+- Variáveis dinâmicas de locadora, cliente, CNH, veículo, locação e atendente.
+- Emissão de contrato com conteúdo congelado no histórico e PDF próprio da versão emitida.
+- Cobranças recorrentes diária, semanal, quinzenal, mensal e personalizada.
+- Geração de parcelas futuras com tratamento de fim de mês.
+- Multa, juros mensais, pagamentos parciais e atualização do saldo.
+- Painel de inadimplência com total vencido, clientes, atraso médio e aging 1–7, 8–15, 16–30, 31–60 e 60+ dias.
+- Régua de cobrança com canal, observação, promessa de pagamento e próxima ação.
+- Relatório de maiores devedores.
+- Auditoria e sincronização PC ↔ navegador também para contratos, parcelas, planos recorrentes e ações de cobrança.
+
 ## Persistência local
 
 ### Desktop
@@ -53,6 +65,7 @@ Nele ficam:
 
 - snapshot operacional;
 - clientes, veículos, locações, financeiro e vistorias contidos no snapshot;
+- contratos, modelos, cobranças recorrentes, parcelas e histórico de cobrança;
 - fotos/evidências das vistorias;
 - token de pareamento;
 - fila/metadados de sincronização;
@@ -62,12 +75,7 @@ Não são mantidos arquivos JSON paralelos para estado persistente. Instalaçõe
 
 ### Web / celular
 
-Ao abrir um dos links exibidos em **PC ↔ Mobile**, o navegador usa armazenamento local próprio:
-
-- em HTTPS com OPFS disponível: SQLite/WASM persistido em `locadora.sqlite`;
-- em acesso LAN por HTTP: fallback automático para IndexedDB, permitindo usar o sistema normalmente pelo navegador sem depender de HTTPS.
-
-O Service Worker e a instalação PWA completa continuam condicionados a um contexto seguro HTTPS, conforme as regras do navegador. Isso não impede o uso web local pelo link LAN.
+Ao abrir um dos links exibidos em **PC ↔ Mobile**, o navegador usa armazenamento local próprio para o banco SQLite/WASM. Em contexto HTTPS com OPFS disponível, o arquivo `locadora.sqlite` é persistido diretamente no armazenamento privado do navegador. O Service Worker e a instalação PWA completa continuam condicionados a contexto seguro HTTPS, conforme as regras do navegador.
 
 ## Uso no celular pela rede local
 
@@ -106,7 +114,7 @@ npm run dist
 Saída esperada:
 
 ```text
-release/Sistema-Locadora-Setup-0.6.0.exe
+release/Sistema-Locadora-Setup-0.7.0.exe
 ```
 
 ## Acesso inicial
