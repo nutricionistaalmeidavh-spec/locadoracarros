@@ -1,7 +1,7 @@
 function clone(value){return value==null?value:(typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value)));}
 function stamp(value){for(const key of ['updatedAt','completedAt','paidAt','createdAt','at','dueAt']){const time=Date.parse(value?.[key]??'');if(Number.isFinite(time))return time;}return 0;}
 function snapshotStamp(snapshot){const value=Date.parse(snapshot?.updatedAt??'');return Number.isFinite(value)?value:0;}
-const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','alertState'];
+const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','alertState','contractTemplates','issuedContracts','billingPlans','billingInstallments','collectionActions'];
 
 function mergeCollection(server=[],client=[]){
   const map=new Map();
