@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getFinancialSummary } from '../src/domain/rental.mjs';
+import { getFinancialSummary } from '../src/domain/commercial-finance.mjs';
 import { ensureCommercialSnapshot, createContractTemplate, issueContract, createBillingPlan, delinquencySummary } from '../src/domain/commercial.mjs';
 import { createRepository, STORE_KEY } from '../src/storage/repository.mjs';
 
