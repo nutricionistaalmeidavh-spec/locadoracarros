@@ -24,7 +24,7 @@ export function startMaintenance(input,id,actorId){
 export function completeMaintenance(input,id,{cost=0,mileage=null,notes=''}={},actorId){
   const snapshot=ensureP1Snapshot(input);const record=item(snapshot,id);if(record.status==='completed')throw new Error('Manutenção já concluída.');const now=new Date().toISOString();
   record.status='completed';record.completedAt=now;record.cost=Number(cost)||0;if(notes)record.notes=[record.notes,notes].filter(Boolean).join(' | ');
-  const vehicle=snapshot.vehicles.find(row=>row.id===record.vehicleId);if(vehicle){vehicle.availability='disponivel';if(Number(mileage)>Number(vehicle.mileage||0))vehicle.mileage=Number(mileage);}
+  const vehicle=snapshot.vehicles.find(row=>row.id===record.vehicleId);if(vehicle){const activeRental=snapshot.rentals?.some(r=>r.vehicleId===record.vehicleId&&!r.cancelledAt&&['retirada','em_uso'].includes(r.status));vehicle.availability=activeRental?'locado':'disponivel';if(Number(mileage)>Number(vehicle.mileage||0))vehicle.mileage=Number(mileage);vehicle.updatedAt=now;}
   if(record.cost>0){
     const expense={id:nextEntityId('DES',snapshot.expenses??[]),description:`Manutenção - ${record.type}`,category:'Manutenção',amount:record.cost,dueAt:now,paid:true,vehicleId:record.vehicleId,createdAt:now};
     snapshot.expenses=[expense,...(snapshot.expenses??[])];
