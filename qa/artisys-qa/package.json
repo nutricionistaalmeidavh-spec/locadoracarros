@@ -73,7 +73,7 @@
     "playwright": ">=1.51 <2"
   },
   "devDependencies": {
-    "playwright": "1.62.1"
+    "playwright": "1.55.1"
   },
   "license": "MIT"
 }
