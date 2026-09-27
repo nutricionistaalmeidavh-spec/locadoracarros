@@ -9,7 +9,7 @@
     {
       "action": "fill",
       "label": "Senha",
-      "value": "1234"
+      "secretEnv": "LOCADORA_QA_ADMIN_PASSWORD"
     },
     {
       "action": "click",
@@ -34,8 +34,18 @@
       "expected": "Vistorias"
     },
     {
+      "action": "expectText",
+      "selector": "#view",
+      "expected": "Retirada"
+    },
+    {
+      "action": "expectText",
+      "selector": "#view",
+      "expected": "Devolução"
+    },
+    {
       "action": "screenshot",
-      "name": "rental-inspection-state",
+      "name": "rental-inspection-workflow",
       "fullPage": true
     }
   ]
