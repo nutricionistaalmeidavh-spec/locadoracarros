@@ -26,8 +26,7 @@
   "devDependencies": {
     "electron": "39.8.10",
     "electron-builder": "26.0.12",
-    "sql.js": "1.14.2",
-    "playwright": "1.62.1"
+    "sql.js": "1.14.2"
   },
   "build": {
     "appId": "com.artisys.locadora",
