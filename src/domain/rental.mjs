@@ -16,8 +16,10 @@ function clone(snapshot) {
 }
 
 function nextId(prefix, list) {
-  const max = list.reduce((acc, item) => Math.max(acc, Number(String(item.id).replace(/\D/g,'')) || 0), 0);
-  return `${prefix}-${String(max + 1).padStart(6,'0')}`;
+  const uuid=globalThis.crypto?.randomUUID?.();
+  if(uuid)return `${prefix}-${uuid}`;
+  const entropy=`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;
+  return `${prefix}-${entropy}`;
 }
 
 function audit(snapshot, actorId, action, entityType, entityId, details = {}) {
@@ -128,14 +130,16 @@ export function periodAvailability(snapshot, vehicleId, pickupAt, returnAt) {
 
 export function addCustomer(snapshot, input, actorId) {
   const next = clone(snapshot);
-  const customer = { id:nextId('CLI', next.customers), name:input.name.trim(), document:input.document.trim(), phone:input.phone.trim(), email:input.email?.trim() ?? '', address:input.address?.trim() ?? '', active:true };
-  next.customers.unshift(customer); audit(next, actorId, 'customer.created', 'customer', customer.id); next.updatedAt = new Date().toISOString(); return next;
+  const now=new Date().toISOString();
+  const customer = { id:nextId('CLI', next.customers), name:input.name.trim(), document:input.document.trim(), phone:input.phone.trim(), email:input.email?.trim() ?? '', address:input.address?.trim() ?? '', active:true, createdAt:now, updatedAt:now };
+  next.customers.unshift(customer); audit(next, actorId, 'customer.created', 'customer', customer.id); next.updatedAt = now; return next;
 }
 
 export function addVehicle(snapshot, input, actorId) {
   const next = clone(snapshot);
-  const vehicle = { id:nextId('VEI', next.vehicles), model:input.model.trim(), plate:input.plate.trim().toUpperCase(), year:String(input.year), mileage:Number(input.mileage || 0), category:input.category || 'Padrão', color:input.color || '', dailyRate:Number(input.dailyRate || 0), purchasePrice:Number(input.purchasePrice || 0), availability:'disponivel' };
-  next.vehicles.unshift(vehicle); audit(next, actorId, 'vehicle.created', 'vehicle', vehicle.id); next.updatedAt = new Date().toISOString(); return next;
+  const now=new Date().toISOString();
+  const vehicle = { id:nextId('VEI', next.vehicles), model:input.model.trim(), plate:input.plate.trim().toUpperCase(), year:String(input.year), mileage:Number(input.mileage || 0), category:input.category || 'Padrão', color:input.color || '', dailyRate:Number(input.dailyRate || 0), purchasePrice:Number(input.purchasePrice || 0), availability:'disponivel', createdAt:now, updatedAt:now };
+  next.vehicles.unshift(vehicle); audit(next, actorId, 'vehicle.created', 'vehicle', vehicle.id); next.updatedAt = now; return next;
 }
 
 function parseLegacyDate(value, fallbackYear = 2026) {
