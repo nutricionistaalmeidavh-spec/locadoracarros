@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createEmptySnapshot, createRental } from '../src/domain/rental.mjs';
 import { createBillingPlan, recordInstallmentPayment } from '../src/domain/commercial.mjs';
 import { getFinancialSummary, financialReceivables } from '../src/domain/commercial-finance.mjs';
-import { markRentalSchedulePurpose, createRentalWithBilling, dailyBillingSummary } from '../src/domain/daily-billing.mjs';
+import { markRentalSchedulePurpose, createRentalWithBilling, dailyBillingSummary, nextDailyInstallment, recordNextDailyPayment } from '../src/domain/daily-billing.mjs';
 
 function baseSnapshot() {
   const snapshot = createEmptySnapshot();
@@ -97,4 +97,19 @@ test('fase 2: resumo mostra cinco diárias, duas pagas e trezentos reais em aber
   assert.equal(summary.rows[0].status, 'paid');
   assert.equal(summary.rows[1].status, 'paid');
   assert.equal(summary.rows[2].status, 'pending');
+});
+
+test('fase 3: próxima diária avança após quitação e permite parcial', () => {
+  let snapshot = fiveDayRental();
+  const rental = snapshot.rentals[0];
+  const installments = snapshot.billingInstallments.filter((item) => item.rentalId === rental.id).sort((a,b) => a.sequence-b.sequence);
+  snapshot = recordInstallmentPayment(snapshot, installments[0].id, { amount:100, method:'PIX', paidAt:'2026-10-01T12:00:00Z' }, 'USR-001');
+  snapshot = recordInstallmentPayment(snapshot, installments[1].id, { amount:100, method:'PIX', paidAt:'2026-10-01T12:05:00Z' }, 'USR-001');
+
+  assert.equal(nextDailyInstallment(snapshot, rental.id)?.sequence, 3);
+  snapshot = recordNextDailyPayment(snapshot, rental.id, { amount:40, method:'Dinheiro', paidAt:'2026-10-02T09:00:00Z' }, 'USR-001');
+  assert.equal(nextDailyInstallment(snapshot, rental.id)?.sequence, 3, 'parcial mantém a mesma diária como próxima');
+  snapshot = recordNextDailyPayment(snapshot, rental.id, { amount:60, method:'PIX', paidAt:'2026-10-02T09:05:00Z' }, 'USR-001');
+  assert.equal(nextDailyInstallment(snapshot, rental.id)?.sequence, 4);
+  assert.equal(snapshot.billingInstallments.find((item) => item.id === installments[2].id).status, 'paid');
 });
