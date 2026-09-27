@@ -20,7 +20,7 @@ export function activeRentalSchedulePlans(snapshot) {
 
 export function createRentalWithBilling(input, draft={}, actorId) {
   const billingMode = draft.billingMode === 'daily' ? 'daily' : 'total';
-  let snapshot = createRental(input, draft, actorId);
+  let snapshot = ensureCommercialSnapshot(createRental(input, draft, actorId));
   const rental = snapshot.rentals[0];
   rental.billingMode = billingMode;
   rental.updatedAt = new Date().toISOString();
