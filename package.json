@@ -14,13 +14,20 @@
     "qa:install": "npm install --prefix qa/artisys-qa",
     "qa:quick": "node qa/artisys-qa/src/cli.mjs quick --config qa/artisys-qa/locadora.config.json",
     "qa:full": "node qa/artisys-qa/src/cli.mjs full --config qa/artisys-qa/locadora.config.json",
-    "qa:release": "node qa/artisys-qa/src/cli.mjs release --config qa/artisys-qa/locadora.config.json"
+    "qa:release": "node qa/artisys-qa/src/cli.mjs release --config qa/artisys-qa/locadora.config.json",
+    "coverage": "node scripts/check-coverage.cjs",
+    "coverage:vertical": "node scripts/check-vertical-coverage.cjs",
+    "e2e": "node --test --test-concurrency=1 qa/e2e/*.test.cjs",
+    "e2e:smoke": "node --test qa/e2e/smoke.test.cjs",
+    "verify": "npm run check && npm test && npm run coverage:vertical",
+    "release:check": "npm run verify && npm run coverage && npm run e2e && npm run qa:release"
   },
   "main": "electron/main.cjs",
   "devDependencies": {
     "electron": "39.8.10",
     "electron-builder": "26.0.12",
-    "sql.js": "1.14.2"
+    "sql.js": "1.14.2",
+    "playwright": "1.62.1"
   },
   "build": {
     "appId": "com.artisys.locadora",
