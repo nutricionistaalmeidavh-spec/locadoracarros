@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { chromium, _electron as electron } from 'playwright';
-import { attachPageTelemetry } from './telemetry.js';
+import { attachPageTelemetry, assertNoPageErrors } from './telemetry.js';
 import { executeStep } from './steps.js';
 import { createFrameRecorder } from './video.js';
 import { startConsumerProcess } from './process.js';
@@ -50,6 +50,8 @@ export async function runQaFlow({
   const screenshotsDir = await ensureDir(path.join(outputDir, 'screenshots'));
   const traceFile = path.join(outputDir, 'trace.zip');
   const telemetry = [];
+  const observedPages=new WeakSet();
+  const observePage=page=>{if(!observedPages.has(page)){observedPages.add(page);attachPageTelemetry(page,telemetry);}};
   const stepsLog = [];
   const startedAt = new Date().toISOString();
   const loaded = await loadFlowFile(flowFile);
@@ -106,6 +108,8 @@ export async function runQaFlow({
         timeout: manifest.launchTimeoutMs || 30000,
       });
       context = electronApp.context();
+      context.on('page',observePage);
+      context.pages().forEach(observePage);
       await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
       page = await electronApp.firstWindow();
       await page.setViewportSize({ width: viewport.width, height: viewport.height }).catch(() => {});
@@ -125,7 +129,7 @@ export async function runQaFlow({
       nativeVideo = page.video?.() || null;
     }
 
-    attachPageTelemetry(page, telemetry);
+    observePage(page);
     if (environment.baseURL && manifest.mode === 'web' && flow.autoGoto !== false) {
       await page.goto(environment.baseURL, { waitUntil: flow.waitUntil || 'domcontentloaded' });
     }
@@ -150,6 +154,7 @@ export async function runQaFlow({
         if (manifest.capture?.screenshotEachStep) {
           await page.screenshot({ path: path.join(screenshotsDir, `${label}-after.png`), fullPage: false });
         }
+        assertNoPageErrors(telemetry);
         stepsLog.push({ index, action: step.action, name: step.name || null, status: 'passed', durationMs: Date.now() - stepStart });
         await notify({ type: 'step-end', flow: flowName, step: stepName, status: 'passed', current: index + 1, total: flow.steps.length });
       } catch (error) {
@@ -159,6 +164,7 @@ export async function runQaFlow({
       }
     }
 
+    assertNoPageErrors(telemetry);
     if (preparedProfile) {
       await finalizeDemoProfile({
         profile: demoProfile,

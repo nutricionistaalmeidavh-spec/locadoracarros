@@ -10,6 +10,8 @@ jobs:
   verify-and-build:
     runs-on: windows-latest
     timeout-minutes: 30
+    env:
+      LOCADORA_QA_ADMIN_PASSWORD: '1234'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,6 +30,19 @@ jobs:
           $files = Get-ChildItem release/Sistema-Locadora-Setup-*.exe
           if ($files.Count -lt 1) { throw 'Installer artifact missing' }
           if ($files[0].Length -lt 1MB) { throw 'Installer artifact unexpectedly small' }
+      - name: Install QA runtime
+        run: npm run qa:install
+      - name: Install and test packaged Windows application
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem release/Sistema-Locadora-Setup-*.exe | Select-Object -First 1
+          $installDir = Join-Path $env:RUNNER_TEMP 'LocadoraInstalled'
+          $process = Start-Process -FilePath $installer.FullName -ArgumentList @('/S', "/D=$installDir") -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
+          $env:LOCADORA_E2E_EXECUTABLE = Join-Path $installDir 'Sistema Locadora.exe'
+          if (!(Test-Path $env:LOCADORA_E2E_EXECUTABLE)) { throw 'Installed executable missing' }
+          npm run e2e
+          if ($LASTEXITCODE -ne 0) { throw 'Installed application E2E failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: Sistema-Locadora-Windows

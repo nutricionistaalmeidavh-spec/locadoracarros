@@ -26,3 +26,13 @@ export function isLegacyBackupPayload(raw) {
   if (value.format === 'artisys-locadora-backup') return false;
   return Array.isArray(value.customers) || Array.isArray(value.vehicles) || Array.isArray(value.rentals) || Array.isArray(value.expenses);
 }
+
+// A restore starts a new data generation: stale devices must adopt it, not merge
+// records intentionally removed by the restore back into the restored snapshot.
+export function prepareSnapshotRestore(backup,current,{id=crypto.randomUUID(),at=new Date().toISOString()}={}) {
+  const next=structuredClone(backup);
+  const generation=Math.max(Number(current?.restorePoint?.generation)||0,Number(backup?.restorePoint?.generation)||0)+1;
+  next.restorePoint={generation,id};
+  next.updatedAt=at;
+  return next;
+}

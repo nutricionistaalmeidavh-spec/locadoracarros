@@ -3,6 +3,13 @@ function stamp(value){for(const key of ['updatedAt','completedAt','paidAt','crea
 function snapshotStamp(snapshot){const value=Date.parse(snapshot?.updatedAt??'');return Number.isFinite(value)?value:0;}
 const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','contractTemplates','issuedContracts','billingPlans','billingInstallments','collectionActions'];
 
+function compareRestorePoints(a,b){
+  const ag=Number(a?.restorePoint?.generation)||0,bg=Number(b?.restorePoint?.generation)||0;
+  if(ag!==bg)return ag>bg?1:-1;
+  const ai=String(a?.restorePoint?.id||''),bi=String(b?.restorePoint?.id||'');
+  return ai===bi?0:ai>bi?1:-1;
+}
+
 function mergeCollection(server=[],client=[]){
   const map=new Map();
   for(const item of server||[])if(item?.id!=null)map.set(String(item.id),clone(item));
@@ -31,6 +38,8 @@ function mergeAlertState(server={},client={}){
 export function mergeSnapshots(serverSnapshot,clientSnapshot){
   if(!serverSnapshot)return clone(clientSnapshot);
   if(!clientSnapshot)return clone(serverSnapshot);
+  const restoration=compareRestorePoints(clientSnapshot,serverSnapshot);
+  if(restoration!==0)return clone(restoration>0?clientSnapshot:serverSnapshot);
   const server=clone(serverSnapshot),client=clone(clientSnapshot);
   const merged={...server};
   for(const key of COLLECTIONS)if(Array.isArray(server[key])||Array.isArray(client[key]))merged[key]=mergeCollection(server[key],client[key]);
@@ -48,6 +57,9 @@ export function exchangeSnapshots({serverRevision=0,serverSnapshot=null,baseRevi
   if(!clientSnapshot||typeof clientSnapshot!=='object'||Array.isArray(clientSnapshot))throw new TypeError('clientSnapshot is required.');
   const currentRevision=Math.max(0,Number(serverRevision)||0),knownRevision=Math.max(0,Number(baseRevision)||0);
   if(!serverSnapshot)return {action:'push',snapshot:clone(clientSnapshot),nextRevision:Math.max(1,currentRevision+1),conflict:false};
+  const restoration=compareRestorePoints(clientSnapshot,serverSnapshot);
+  if(restoration>0)return {action:'push',snapshot:clone(clientSnapshot),nextRevision:currentRevision+1,conflict:true};
+  if(restoration<0)return {action:'pull',snapshot:clone(serverSnapshot),nextRevision:currentRevision,conflict:true};
   if(knownRevision===currentRevision){
     if(snapshotStamp(clientSnapshot)<snapshotStamp(serverSnapshot))return {action:'pull',snapshot:clone(serverSnapshot),nextRevision:currentRevision,conflict:false};
     return {action:'push',snapshot:clone(clientSnapshot),nextRevision:currentRevision+1,conflict:false};

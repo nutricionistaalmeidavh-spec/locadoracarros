@@ -26,3 +26,8 @@ export function attachPageTelemetry(page, sink = []) {
 
   return sink;
 }
+
+export function assertNoPageErrors(events) {
+  const errors=events.filter(event=>event.type==='pageerror');
+  if(errors.length)throw new Error(`JavaScript da página falhou: ${errors.map(error=>error.message).join('; ')}`);
+}

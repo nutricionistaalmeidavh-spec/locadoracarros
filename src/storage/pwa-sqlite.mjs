@@ -58,7 +58,7 @@ async function createOpfsSqliteStore(){
 
   async function persist(){
     const exported=db.export();
-    queue=queue.then(async()=>{const writable=await handle.createWritable();await writable.write(exported);await writable.close();});
+    queue=queue.catch(()=>{}).then(async()=>{const writable=await handle.createWritable();await writable.write(exported);await writable.close();});
     return queue;
   }
   function get(key){
