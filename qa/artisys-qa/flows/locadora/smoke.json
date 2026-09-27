@@ -14,7 +14,7 @@
     {
       "action": "fill",
       "label": "Senha",
-      "secretEnv": "LOCADORA_QA_ADMIN_PASSWORD"
+      "valueFromEnv": "LOCADORA_QA_ADMIN_PASSWORD"
     },
     {
       "action": "click",
