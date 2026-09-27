@@ -11,7 +11,7 @@ export function createSyncClient({store,fetchImpl=fetch,deviceId=null}={}){
   let offline=createOfflineState();
   let conflict=null;
   let queue=Promise.resolve();
-  const enqueue=(task)=>{queue=queue.then(task);queue.catch(()=>{});return queue;};
+  const enqueue=(task)=>{queue=queue.catch(()=>{}).then(task);queue.catch(()=>{});return queue;};
 
   async function init(){
     const [rawMeta,rawOffline,rawConflict]=await Promise.all([store.get(SYNC_META_KEY),store.get(SYNC_OFFLINE_KEY),store.get(SYNC_CONFLICT_KEY)]);

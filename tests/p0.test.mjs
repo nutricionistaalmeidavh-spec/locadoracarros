@@ -5,10 +5,12 @@ import {
   createRental,
   registerPayment,
   addExpense,
-  getFinancialSummary
+  getFinancialSummary,
+  addCustomer,
+  addVehicle
 } from '../src/domain/rental.mjs';
 import { can, authenticate, seedUsers } from '../src/domain/auth.mjs';
-import { createBackupEnvelope, restoreBackupEnvelope } from '../src/domain/backup.mjs';
+import { createBackupEnvelope, restoreBackupEnvelope, isLegacyBackupPayload } from '../src/domain/backup.mjs';
 
 function baseSnapshot() {
   const snapshot = createEmptySnapshot();
@@ -72,3 +74,13 @@ test('migração 0.1.5 preserva clientes, frota, locações, pagamentos e despes
   assert.equal(getFinancialSummary(migrated).expensesAmount, 30);
   assert.equal(migrated.settings.companyName, 'Locadora Teste');
 });
+
+
+test('P0 restore não classifica envelope adulterado como legado',async()=>{const raw=await createBackupEnvelope(baseSnapshot());const value=JSON.parse(raw);value.checksum='bad';const tampered=JSON.stringify(value);assert.equal(isLegacyBackupPayload(tampered),false);await assert.rejects(()=>restoreBackupEnvelope(tampered),/integridade/i);assert.equal(isLegacyBackupPayload(JSON.stringify({version:1,customers:[],vehicles:[],rentals:[]})),true);});
+
+test('P0 novos IDs são únicos mesmo partindo do mesmo snapshot offline',()=>{const a=addCustomerForTest(baseSnapshot(),'Ana A');const b=addCustomerForTest(baseSnapshot(),'Ana B');assert.notEqual(a.customers[0].id,b.customers[0].id);});
+
+function addCustomerForTest(s,name){return addCustomer(s,{name,document:name,phone:'1'},'USR-001');}
+
+
+test('P0 clientes e frota: cadastro gera identidades independentes e preserva dados',()=>{let s=baseSnapshot();const beforeCustomers=s.customers.length,beforeVehicles=s.vehicles.length;s=addCustomer(s,{name:'Bruno',document:'2',phone:'2'},'USR-001');s=addVehicle(s,{model:'Mobi',plate:'XYZ9A99',year:'2026',mileage:0,category:'Econômico',color:'Branco',dailyRate:120,purchasePrice:60000},'USR-001');assert.equal(s.customers.length,beforeCustomers+1);assert.equal(s.vehicles.length,beforeVehicles+1);const customer=s.customers.find(x=>x.document==='2');const vehicle=s.vehicles.find(x=>x.plate==='XYZ9A99');assert.ok(customer);assert.ok(vehicle);assert.match(customer.id,/^CLI-/);assert.match(vehicle.id,/^VEI-/);assert.equal(vehicle.plate,'XYZ9A99');});

@@ -24,32 +24,43 @@ async function createDesktopStore(){
   });
 }
 
-export async function createRepository(){
+export async function createRepository({onPersistenceError=()=>{}}={}){
   const storage=await createDesktopStore()??await createPwaSqliteStore();
   const raw=await storage.get(STORE_KEY);
   let cache=normalize(raw);
   if(raw==null||Number((typeof raw==='string'?JSON.parse(raw):raw)?.version||0)<4)await storage.set(STORE_KEY,JSON.stringify(cache));
   let writeQueue=Promise.resolve();
 
+  const failedWrites=new Map();
+  const enqueue=(key,task)=>{
+    writeQueue=writeQueue.catch(()=>{}).then(task).then(value=>{failedWrites.delete(key);return value;},error=>{failedWrites.set(key,error);throw error;});
+    writeQueue.catch(error=>{try{onPersistenceError(error);}catch{}});
+    return writeQueue;
+  };
   const persist=(value)=>{
-    writeQueue=writeQueue.then(()=>storage.set(STORE_KEY,JSON.stringify(value)));
-    writeQueue.catch(()=>{});
+    const serialized=JSON.stringify(value);
+    enqueue(STORE_KEY,()=>storage.set(STORE_KEY,serialized));
     return value;
   };
 
+  const flush=async()=>{
+    await writeQueue.catch(()=>{});
+    if(failedWrites.size)throw failedWrites.values().next().value;
+    await storage.flush?.();
+  };
   const kv=Object.freeze({
     kind:storage.kind,
     get:(key)=>storage.get(key),
-    set:(key,value)=>{writeQueue=writeQueue.then(()=>storage.set(key,String(value)));writeQueue.catch(()=>{});return true;},
-    remove:(key)=>{writeQueue=writeQueue.then(()=>storage.remove(key));writeQueue.catch(()=>{});return true;},
-    flush:async()=>{await writeQueue;await storage.flush?.();}
+    set:(key,value)=>{return enqueue(key,()=>storage.set(key,String(value)));},
+    remove:(key)=>{return enqueue(key,()=>storage.remove(key));},
+    flush
   });
 
   return Object.freeze({
     kind:storage.kind,
     load(){return cache;},
     save(snapshot){cache=normalize(snapshot);persist(cache);return cache;},
-    async flush(){await writeQueue;await storage.flush?.();},
+    flush,
     async reset(){cache=normalize(null);await storage.remove(STORE_KEY);await storage.set(STORE_KEY,JSON.stringify(cache));return cache;},
     kv
   });

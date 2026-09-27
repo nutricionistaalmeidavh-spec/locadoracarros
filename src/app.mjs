@@ -1,3 +1,4 @@
+import { prepareSnapshotRestore } from './domain/backup.mjs';
 import { authenticate,can } from './domain/auth.mjs';
 import { getFinancialSummary } from './domain/commercial-finance.mjs';
 import { buildOperationalAlerts } from './domain/alerts.mjs';
@@ -12,7 +13,7 @@ import { renderDashboard,renderVistorias,renderManutencao,renderAlertas,renderDo
 import { renderSync } from './ui/p2.mjs';
 import { renderContracts,renderBilling,renderDelinquency } from './ui/commercial.mjs';
 
-let repository=null,syncClient=null,snapshot=null,sessionUser=null,active='dashboard',syncInfo=null,syncBusy=false,syncTimer=null;
+let repository=null,syncClient=null,snapshot=null,sessionUser=null,active='dashboard',syncInfo=null,syncBusy=false,syncTimer=null,activeSync=null,restoring=false;
 const app=document.querySelector('#app');
 const syncMeta=()=>syncClient?.load()??{enabled:false,autoSync:false,revision:0,lastError:null};
 
@@ -20,27 +21,41 @@ function save(next){
   try{snapshot=repository.save(next);syncClient.markDirty(snapshot);render();scheduleAutoSync();return snapshot;}
   catch(error){toast(`Falha ao salvar localmente: ${error.message}`);throw error;}
 }
-function replaceSnapshot(next){snapshot=repository.save(next);render();return snapshot;}
+async function replaceSnapshot(next){
+  if(restoring)throw new Error('Uma restauração já está em andamento.');
+  restoring=true;
+  try{
+    await activeSync;
+    snapshot=repository.save(prepareSnapshotRestore(next,snapshot));
+    await repository.flush();
+    syncClient.markDirty(snapshot);await syncClient.flush();
+    render();return snapshot;
+  }finally{restoring=false;scheduleAutoSync();}
+}
 function context(){return{snapshot,sessionUser,save,replaceSnapshot,repository,syncClient,syncInfo,syncNow};}
 function scheduleAutoSync(){const meta=syncMeta();if(!meta.enabled||!meta.autoSync)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>{void syncNow({silent:true});},350);}
 
 async function syncNow({silent=false}={}){
-  if(syncBusy)return{ok:false,skipped:true,snapshot,meta:syncMeta(),offline:syncClient.offlineState()};
+  if(syncBusy||restoring)return{ok:false,skipped:true,snapshot,meta:syncMeta(),offline:syncClient.offlineState()};
   syncBusy=true;
+  activeSync=(async()=>{
   try{
     await repository.flush();
     const result=await syncClient.sync(snapshot);
     if(result.ok&&['pull','merge'].includes(result.direction)&&result.snapshot){snapshot=repository.save(result.snapshot);await repository.flush();}
     if(!silent)render();
     return result;
-  }finally{syncBusy=false;}
+  }catch(error){return {ok:false,error,snapshot,meta:syncMeta(),offline:syncClient.offlineState()};}
+  finally{syncBusy=false;}
+  })();
+  try{return await activeSync;}finally{activeSync=null;}
 }
 
 function render(){
   if(!snapshot)return;
   if(!sessionUser)return renderLogin();
   const summary=getFinancialSummary(snapshot),alerts=buildOperationalAlerts(snapshot),meta=syncMeta(),offline=syncClient.offlineState();
-  const nav=[['dashboard','Dashboard'],['reservas','Reservas'],['clientes','Clientes'],['frota','Frota'],...(can(sessionUser,'inspection.read')||can(sessionUser,'inspection.write')?[['vistorias','Vistorias']]:[]),...(can(sessionUser,'maintenance.read')?[['manutencao','Manutenção']]:[]),...(can(sessionUser,'finance.read')?[['financeiro','Financeiro']]:[]),...(can(sessionUser,'billing.read')?[['cobrancas','Cobranças'],['inadimplencia','Inadimplência']]:[]),...(can(sessionUser,'contracts.read')?[['contratos','Contratos']]:[]),...(can(sessionUser,'alerts.read')?[['alertas',`Alertas${alerts.length?` (${alerts.length})`:''}`]]:[]),...(can(sessionUser,'documents.read')?[['documentos','Documentos']]:[]),...(can(sessionUser,'sync.read')?[['sync','PC ↔ Mobile']]:[]),...(sessionUser.role==='admin'?[['auditoria','Auditoria']]:[]),...(can(sessionUser,'backup.create')||sessionUser.role==='admin'?[['backup','Backup e Config.']]:[])];
+  const nav=[['dashboard','Dashboard'],['reservas','Reservas'],...(can(sessionUser,'customer.read')?[['clientes','Clientes']]:[]),...(can(sessionUser,'vehicle.read')?[['frota','Frota']]:[]),...(can(sessionUser,'inspection.read')||can(sessionUser,'inspection.write')?[['vistorias','Vistorias']]:[]),...(can(sessionUser,'maintenance.read')?[['manutencao','Manutenção']]:[]),...(can(sessionUser,'finance.read')?[['financeiro','Financeiro']]:[]),...(can(sessionUser,'billing.read')?[['cobrancas','Cobranças'],['inadimplencia','Inadimplência']]:[]),...(can(sessionUser,'contracts.read')?[['contratos','Contratos']]:[]),...(can(sessionUser,'alerts.read')?[['alertas',`Alertas${alerts.length?` (${alerts.length})`:''}`]]:[]),...(can(sessionUser,'documents.read')?[['documentos','Documentos']]:[]),...(can(sessionUser,'sync.read')?[['sync','PC ↔ Mobile']]:[]),...(sessionUser.role==='admin'?[['auditoria','Auditoria']]:[]),...(can(sessionUser,'backup.create')||sessionUser.role==='admin'?[['backup','Backup e Config.']]:[])];
   if(!nav.some(([id])=>id===active))active='dashboard';
   const syncLabel=offline.dirty?`Sync pendente (${offline.pending.length})`:(meta.enabled?(meta.lastError?'Sync offline':`Sync r${meta.revision}`):'Sync desativado');
   const storageLabel=repository.kind==='sqlite-desktop'?'SQLite PC':repository.kind==='sqlite-opfs'?'SQLite Web':'Armazenamento Web';
@@ -70,7 +85,7 @@ async function configureSync(){
 async function bootstrap(){
   app.innerHTML='<div class="login-wrap"><div class="login-card"><strong>Inicializando armazenamento local…</strong><p class="hint">Os dados permanecem neste dispositivo e sincronizam com o PC quando configurado.</p></div></div>';
   try{
-    repository=await createRepository();snapshot=repository.load();
+    repository=await createRepository({onPersistenceError:error=>toast(`Falha ao gravar no dispositivo: ${error.message}. Salve novamente após corrigir o armazenamento.`)});snapshot=repository.load();
     syncClient=createSyncClient({store:repository.kv});await syncClient.init();
     if('serviceWorker' in navigator&&globalThis.isSecureContext){try{await navigator.serviceWorker.register('./sw.js');}catch{}}
     await configureSync();render();

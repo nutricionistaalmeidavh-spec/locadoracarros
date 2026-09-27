@@ -1,7 +1,14 @@
 function clone(value){return value==null?value:(typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value)));}
 function stamp(value){for(const key of ['updatedAt','completedAt','paidAt','createdAt','at','dueAt']){const time=Date.parse(value?.[key]??'');if(Number.isFinite(time))return time;}return 0;}
 function snapshotStamp(snapshot){const value=Date.parse(snapshot?.updatedAt??'');return Number.isFinite(value)?value:0;}
-const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','alertState','contractTemplates','issuedContracts','billingPlans','billingInstallments','collectionActions'];
+const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','contractTemplates','issuedContracts','billingPlans','billingInstallments','collectionActions'];
+
+function compareRestorePoints(a,b){
+  const ag=Number(a?.restorePoint?.generation)||0,bg=Number(b?.restorePoint?.generation)||0;
+  if(ag!==bg)return ag>bg?1:-1;
+  const ai=String(a?.restorePoint?.id||''),bi=String(b?.restorePoint?.id||'');
+  return ai===bi?0:ai>bi?1:-1;
+}
 
 function mergeCollection(server=[],client=[]){
   const map=new Map();
@@ -17,12 +24,26 @@ function mergeCollection(server=[],client=[]){
   return [...map.values()];
 }
 
+function alertStamp(value){const time=Date.parse(value?.updatedAt??value?.at??'');return Number.isFinite(time)?time:0;}
+function mergeAlertState(server={},client={}){
+  const merged={...clone(server||{})};
+  for(const [id,value] of Object.entries(client||{})){
+    const current=merged[id];
+    if(current==null||alertStamp(value)>alertStamp(current))merged[id]=clone(value);
+    else if(alertStamp(value)===alertStamp(current)&&JSON.stringify(value)>JSON.stringify(current))merged[id]=clone(value);
+  }
+  return merged;
+}
+
 export function mergeSnapshots(serverSnapshot,clientSnapshot){
   if(!serverSnapshot)return clone(clientSnapshot);
   if(!clientSnapshot)return clone(serverSnapshot);
+  const restoration=compareRestorePoints(clientSnapshot,serverSnapshot);
+  if(restoration!==0)return clone(restoration>0?clientSnapshot:serverSnapshot);
   const server=clone(serverSnapshot),client=clone(clientSnapshot);
   const merged={...server};
   for(const key of COLLECTIONS)if(Array.isArray(server[key])||Array.isArray(client[key]))merged[key]=mergeCollection(server[key],client[key]);
+  merged.alertState=mergeAlertState(server.alertState,client.alertState);
   const clientNewer=snapshotStamp(client)>snapshotStamp(server);
   merged.settings=clone(clientNewer?client.settings??server.settings:server.settings??client.settings);
   merged.version=Math.max(Number(server.version)||0,Number(client.version)||0);
@@ -36,6 +57,9 @@ export function exchangeSnapshots({serverRevision=0,serverSnapshot=null,baseRevi
   if(!clientSnapshot||typeof clientSnapshot!=='object'||Array.isArray(clientSnapshot))throw new TypeError('clientSnapshot is required.');
   const currentRevision=Math.max(0,Number(serverRevision)||0),knownRevision=Math.max(0,Number(baseRevision)||0);
   if(!serverSnapshot)return {action:'push',snapshot:clone(clientSnapshot),nextRevision:Math.max(1,currentRevision+1),conflict:false};
+  const restoration=compareRestorePoints(clientSnapshot,serverSnapshot);
+  if(restoration>0)return {action:'push',snapshot:clone(clientSnapshot),nextRevision:currentRevision+1,conflict:true};
+  if(restoration<0)return {action:'pull',snapshot:clone(serverSnapshot),nextRevision:currentRevision,conflict:true};
   if(knownRevision===currentRevision){
     if(snapshotStamp(clientSnapshot)<snapshotStamp(serverSnapshot))return {action:'pull',snapshot:clone(serverSnapshot),nextRevision:currentRevision,conflict:false};
     return {action:'push',snapshot:clone(clientSnapshot),nextRevision:currentRevision+1,conflict:false};
