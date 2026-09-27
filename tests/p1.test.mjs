@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ensureP1Snapshot } from '../src/domain/p1.mjs';
+import { moveRental } from '../src/domain/rental.mjs';
 import { createInspection, setInspectionItem, addInspectionPhoto, completeInspection, inspectionProgress } from '../src/domain/inspection.mjs';
 import { scheduleMaintenance, startMaintenance, completeMaintenance, maintenanceDue, syncMaintenanceAvailability } from '../src/domain/maintenance.mjs';
 import { buildOperationalAlerts, acknowledgeAlert, dismissAlert } from '../src/domain/alerts.mjs';
@@ -27,3 +28,6 @@ test('documentos geram PDFs válidos para contrato, recibo e vistoria',()=>{let 
 test('P1 bloqueia devolução sem vistoria de retirada concluída',()=>{assert.throws(()=>createInspection(base(),{rentalId:'LOC-1',kind:'return'},'USR-1'),/retirada/i);});
 
 test('P1 manutenção concluída não libera veículo com locação ativa',()=>{let s=base();s.vehicles[0].availability='locado';s=scheduleMaintenance(s,{vehicleId:'VEI-1',type:'Emergencial',dueMileage:10000},'USR-1');const id=s.maintenance[0].id;s=startMaintenance(s,id,'USR-1');s=completeMaintenance(s,id,{cost:10,mileage:10100},'USR-1');assert.equal(s.vehicles[0].availability,'locado');});
+
+
+test('P1 locação exige vistorias concluídas para entrar em uso e devolver',()=>{let s=base();s.rentals[0].status='retirada';assert.throws(()=>moveRental(s,'LOC-1','em_uso','USR-1'),/vistoria de retirada/i);s.inspections=[{id:'VIS-C',rentalId:'LOC-1',vehicleId:'VEI-1',kind:'checkout',status:'completed',checklist:[],photos:[],completedAt:'2026-09-14T10:00:00Z'}];s=moveRental(s,'LOC-1','em_uso','USR-1');assert.equal(s.rentals[0].status,'em_uso');assert.throws(()=>moveRental(s,'LOC-1','devolucao','USR-1'),/vistoria de devolução/i);s.inspections.unshift({id:'VIS-R',rentalId:'LOC-1',vehicleId:'VEI-1',kind:'return',status:'completed',checklist:[],photos:[],completedAt:'2026-09-14T11:00:00Z'});s=moveRental(s,'LOC-1','devolucao','USR-1');assert.equal(s.rentals[0].status,'devolucao');assert.equal(s.vehicles[0].availability,'disponivel');});
