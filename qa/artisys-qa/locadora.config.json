@@ -11,7 +11,10 @@
     "fps": 4
   },
   "electron": {
-    "entry": "../../electron/main.cjs"
+    "entry": "../../electron/main.cjs",
+    "env": {
+      "LOCADORA_E2E_USER_DATA": "./qa-artifacts/electron-profile"
+    }
   },
   "environments": {
     "local": {}
