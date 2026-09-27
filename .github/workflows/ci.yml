@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 22
       - run: npm install --ignore-scripts --no-audit --no-fund
-      - run: npm run qa:install
+      - run: npm install --prefix qa/artisys-qa --package-lock=false --no-audit --no-fund
       - name: Static, domain, persistence, sync and vertical gates
         run: npm run verify
       - name: Code coverage gate
