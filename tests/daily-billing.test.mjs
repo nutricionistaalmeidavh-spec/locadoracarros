@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createEmptySnapshot, createRental } from '../src/domain/rental.mjs';
-import { createBillingPlan } from '../src/domain/commercial.mjs';
+import { createBillingPlan, recordInstallmentPayment } from '../src/domain/commercial.mjs';
 import { getFinancialSummary, financialReceivables } from '../src/domain/commercial-finance.mjs';
-import { markRentalSchedulePurpose, createRentalWithBilling } from '../src/domain/daily-billing.mjs';
+import { markRentalSchedulePurpose, createRentalWithBilling, dailyBillingSummary } from '../src/domain/daily-billing.mjs';
 
 function baseSnapshot() {
   const snapshot = createEmptySnapshot();
@@ -18,6 +18,10 @@ function rentalDraft(overrides={}) {
     pickupAt:'2026-10-01T10:00:00', returnAt:'2026-10-11T10:00:00',
     dailyRate:100, notes:'', ...overrides
   };
+}
+
+function fiveDayRental() {
+  return createRentalWithBilling(baseSnapshot(), rentalDraft({ returnAt:'2026-10-06T10:00:00', billingMode:'daily' }), 'USR-001');
 }
 
 test('fase 0: agenda diária não duplica receita da locação', () => {
@@ -75,4 +79,22 @@ test('fase 1: modo total preserva uma locação sem agenda diária', () => {
   assert.equal(snapshot.billingPlans.length, 0);
   assert.equal(snapshot.billingInstallments.length, 0);
   assert.equal(getFinancialSummary(snapshot).grossRevenue, 200);
+});
+
+test('fase 2: resumo mostra cinco diárias, duas pagas e trezentos reais em aberto', () => {
+  let snapshot = fiveDayRental();
+  const rental = snapshot.rentals[0];
+  const installments = snapshot.billingInstallments.filter((item) => item.rentalId === rental.id).sort((a,b) => a.sequence-b.sequence);
+  snapshot = recordInstallmentPayment(snapshot, installments[0].id, { amount:100, method:'PIX', paidAt:'2026-10-01T12:00:00Z' }, 'USR-001');
+  snapshot = recordInstallmentPayment(snapshot, installments[1].id, { amount:100, method:'PIX', paidAt:'2026-10-01T12:05:00Z' }, 'USR-001');
+
+  const summary = dailyBillingSummary(snapshot, rental.id, '2026-10-01T12:10:00Z');
+  assert.equal(summary.totalCount, 5);
+  assert.equal(summary.paidCount, 2);
+  assert.equal(summary.pendingCount, 3);
+  assert.equal(summary.received, 200);
+  assert.equal(summary.openAmount, 300);
+  assert.equal(summary.rows[0].status, 'paid');
+  assert.equal(summary.rows[1].status, 'paid');
+  assert.equal(summary.rows[2].status, 'pending');
 });
