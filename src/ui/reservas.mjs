@@ -1,5 +1,5 @@
 import { getFinancialSummary, moveRental } from '../domain/rental.mjs';
-import { createRentalWithBilling } from '../domain/daily-billing.mjs';
+import { createRentalWithBilling, dailyBillingSummary } from '../domain/daily-billing.mjs';
 import { can } from '../domain/auth.mjs';
 import { closeModal, date, esc, modal, money, toast } from './common.mjs';
 
@@ -14,6 +14,7 @@ export function renderReservas(view, ctx) {
   view.querySelector('#new-rental')?.addEventListener('click',()=>showRentalForm(ctx));
   view.querySelectorAll('[data-status]').forEach(b=>b.onclick=()=>{try{save(moveRental(snapshot,b.dataset.id,b.dataset.status,sessionUser.id));toast('Status atualizado.');}catch(err){toast(err.message)}});
   view.querySelectorAll('[data-contract]').forEach(b=>b.onclick=()=>printContract(b.dataset.contract,snapshot));
+  view.querySelectorAll('[data-daily-control]').forEach(b=>b.onclick=()=>showDailyControl(ctx,b.dataset.dailyControl));
 }
 
 function renderAgenda(rows,snapshot) {
@@ -24,7 +25,17 @@ function renderAgenda(rows,snapshot) {
 function rentalRow(r,snapshot,sessionUser) {
   const v=snapshot.vehicles.find(x=>x.id===r.vehicleId), c=snapshot.customers.find(x=>x.id===r.customerId);
   const next={reserva:'retirada',retirada:'em_uso',em_uso:'devolucao'}[r.status];
-  return `<tr><td>${esc(r.id)}</td><td>${esc(c?.name||'-')}</td><td>${esc(v?.model||'-')}<small>${esc(v?.plate||'')}</small></td><td>${date(r.pickupAt)}</td><td>${date(r.returnAt)}</td><td><span class="badge">${esc(r.status)}</span></td><td>${money(r.total)}</td><td class="actions">${next&&can(sessionUser,'rental.write')?`<button data-status="${next}" data-id="${r.id}">Avançar</button>`:''}<button data-contract="${r.id}">Contrato</button></td></tr>`;
+  const daily=r.billingMode==='daily'&&can(sessionUser,'billing.read')?`<button data-daily-control="${esc(r.id)}">Diárias</button>`:'';
+  return `<tr><td>${esc(r.id)}</td><td>${esc(c?.name||'-')}</td><td>${esc(v?.model||'-')}<small>${esc(v?.plate||'')}</small></td><td>${date(r.pickupAt)}</td><td>${date(r.returnAt)}</td><td><span class="badge">${esc(r.status)}</span></td><td>${money(r.total)}</td><td class="actions">${next&&can(sessionUser,'rental.write')?`<button data-status="${next}" data-id="${r.id}">Avançar</button>`:''}${daily}<button data-contract="${r.id}">Contrato</button></td></tr>`;
+}
+
+function showDailyControl(ctx,rentalId){
+  const {snapshot,sessionUser}=ctx;
+  if(!can(sessionUser,'billing.read')){toast('Sem permissão para visualizar cobranças.');return;}
+  const rental=snapshot.rentals.find(r=>r.id===rentalId);
+  const summary=dailyBillingSummary(snapshot,rentalId,new Date().toISOString());
+  const statusLabel={paid:'Pago',partial:'Parcial',overdue:'Atrasado',pending:'Pendente'};
+  modal('Controle de diárias',`<div class="cards"><article><small>Diárias</small><strong>${summary.totalCount}</strong></article><article><small>Pagas</small><strong>${summary.paidCount}</strong></article><article><small>Recebido</small><strong>${money(summary.received)}</strong></article><article><small>A receber</small><strong>${money(summary.openAmount)}</strong></article></div><section class="panel"><div class="panel-title"><h2>${esc(rental?.id||rentalId)}</h2><span>${summary.pendingCount} pendente(s)</span></div><div class="table-wrap"><table><thead><tr><th>Diária</th><th>Vencimento</th><th>Valor</th><th>Pago</th><th>Saldo</th><th>Situação</th></tr></thead><tbody>${summary.rows.map(row=>`<tr><td>${row.sequence}</td><td>${date(row.dueAt)}</td><td>${money(row.amount)}</td><td>${money(row.paidAmount)}</td><td>${money(row.openAmount)}</td><td><span class="badge">${statusLabel[row.status]||esc(row.status)}</span></td></tr>`).join('')||'<tr><td colspan="6" class="empty">Nenhuma diária gerada.</td></tr>'}</tbody></table></div></section><div class="modal-actions"><button type="button" data-close>Fechar</button></div>`);
 }
 
 function showRentalForm(ctx){
