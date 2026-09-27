@@ -83,3 +83,32 @@ export function dailyFinancialSummary(snapshot, asOf=new Date().toISOString()){
     rows:[...rowsByRental.values()].sort((a,b)=>String(a.rentalId).localeCompare(String(b.rentalId)))
   };
 }
+
+export function dailyDelinquencySummary(snapshot,asOf=new Date().toISOString()){
+  const plans=activeRentalSchedulePlans(snapshot).filter(plan=>plan.frequency==='daily');
+  const planIds=new Set(plans.map(plan=>plan.id));
+  const rows=(snapshot?.billingInstallments??[])
+    .filter(item=>planIds.has(item.planId)&&!['paid','cancelled'].includes(item.status))
+    .map(item=>({item,balance:installmentBalance(item,asOf)}))
+    .filter(({balance})=>balance.daysLate>0&&balance.totalDue>0)
+    .map(({item,balance})=>({
+      installmentId:item.id,
+      rentalId:item.rentalId,
+      customerId:item.customerId,
+      vehicleId:item.vehicleId,
+      sequence:Number(item.sequence||0),
+      dueAt:item.dueAt,
+      daysLate:balance.daysLate,
+      amount:Number(item.amount||0),
+      paidAmount:Number(item.paidAmount||0),
+      openAmount:round(Math.max(0,Number(item.amount||0)-Number(item.paidAmount||0))),
+      totalDue:balance.totalDue
+    }))
+    .sort((a,b)=>String(a.dueAt).localeCompare(String(b.dueAt))||a.sequence-b.sequence);
+  return {
+    asOf,
+    overdueCount:rows.length,
+    overdueAmount:round(rows.reduce((sum,row)=>sum+row.totalDue,0)),
+    rows
+  };
+}
