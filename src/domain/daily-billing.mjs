@@ -1,5 +1,7 @@
 import { createRental } from './rental.mjs';
-import { createBillingPlan, ensureCommercialSnapshot } from './commercial.mjs';
+import { createBillingPlan, ensureCommercialSnapshot, installmentBalance } from './commercial.mjs';
+
+const round = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 
 export function billingPlanPurpose(plan) {
   return plan?.purpose === 'rental_schedule' ? 'rental_schedule' : 'additional';
@@ -43,4 +45,30 @@ export function createRentalWithBilling(input, draft={}, actorId) {
   persistedRental.billingMode = 'daily';
   persistedRental.updatedAt = plan.updatedAt;
   return snapshot;
+}
+
+export function dailyBillingSummary(input, rentalId, asOf=new Date().toISOString()) {
+  const snapshot = ensureCommercialSnapshot(input);
+  const plan = activeRentalSchedulePlans(snapshot).find((item) => item.rentalId === rentalId && item.frequency === 'daily');
+  if (!plan) return { rentalId, planId:null, totalCount:0, paidCount:0, pendingCount:0, partialCount:0, overdueCount:0, received:0, openAmount:0, rows:[] };
+  const rows = snapshot.billingInstallments
+    .filter((item) => item.planId === plan.id && item.status !== 'cancelled')
+    .sort((a,b) => Number(a.sequence || 0) - Number(b.sequence || 0))
+    .map((item) => {
+      const balance = installmentBalance(item, asOf);
+      const status = item.status === 'paid' ? 'paid' : item.status === 'partial' ? 'partial' : balance.daysLate > 0 ? 'overdue' : 'pending';
+      return { installmentId:item.id, sequence:item.sequence, dueAt:item.dueAt, amount:Number(item.amount || 0), paidAmount:Number(item.paidAmount || 0), openAmount:round(Math.max(0, Number(item.amount || 0) - Number(item.paidAmount || 0))), totalDue:balance.totalDue, daysLate:balance.daysLate, status };
+    });
+  return {
+    rentalId,
+    planId:plan.id,
+    totalCount:rows.length,
+    paidCount:rows.filter((row) => row.status === 'paid').length,
+    pendingCount:rows.filter((row) => row.status === 'pending' || row.status === 'overdue').length,
+    partialCount:rows.filter((row) => row.status === 'partial').length,
+    overdueCount:rows.filter((row) => row.status === 'overdue').length,
+    received:round(rows.reduce((sum,row) => sum + row.paidAmount, 0)),
+    openAmount:round(rows.reduce((sum,row) => sum + row.openAmount, 0)),
+    rows
+  };
 }
