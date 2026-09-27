@@ -3,7 +3,7 @@ const {_electron}=require('playwright');const {mkdtempSync,rmSync}=require('node
 async function launchLocadora(){
  const root=resolve(__dirname,'..','..','..');const dir=mkdtempSync(join(tmpdir(),'artisys-locadora-e2e-'));let app;
  try{
-  app=await _electron.launch({args:[root],env:{...process.env,ELECTRON_USER_DATA_DIR:dir}});
+  app=await _electron.launch({args:[root],env:{...process.env,LOCADORA_E2E_USER_DATA:dir}});
   const page=await app.firstWindow();
   return{app,page,dir,async close(){try{await Promise.race([app.close(),new Promise((_,r)=>setTimeout(()=>r(new Error('Electron close timeout')),5000))]);}catch{try{app.process()?.kill('SIGKILL')}catch{}}finally{rmSync(dir,{recursive:true,force:true});}}};
  }catch(e){try{await app?.close()}catch{}rmSync(dir,{recursive:true,force:true});throw e;}
