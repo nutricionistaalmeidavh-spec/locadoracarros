@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createEmptySnapshot, createRental } from '../src/domain/rental.mjs';
+import { createEmptySnapshot, createRental, registerPayment } from '../src/domain/rental.mjs';
 import { createBillingPlan, recordInstallmentPayment } from '../src/domain/commercial.mjs';
 import { getFinancialSummary, financialReceivables } from '../src/domain/commercial-finance.mjs';
 import { markRentalSchedulePurpose, createRentalWithBilling, dailyBillingSummary, nextDailyInstallment, recordNextDailyPayment } from '../src/domain/daily-billing.mjs';
@@ -112,4 +112,40 @@ test('fase 3: próxima diária avança após quitação e permite parcial', () =
   snapshot = recordNextDailyPayment(snapshot, rental.id, { amount:60, method:'PIX', paidAt:'2026-10-02T09:05:00Z' }, 'USR-001');
   assert.equal(nextDailyInstallment(snapshot, rental.id)?.sequence, 4);
   assert.equal(snapshot.billingInstallments.find((item) => item.id === installments[2].id).status, 'paid');
+});
+
+test('fase 4: pagamentos diários atualizam locação e recebível pai sem dupla contagem', () => {
+  let snapshot = fiveDayRental();
+  const rentalId = snapshot.rentals[0].id;
+  const installments = snapshot.billingInstallments.filter((item) => item.rentalId === rentalId).sort((a,b) => a.sequence-b.sequence);
+
+  snapshot = recordInstallmentPayment(snapshot, installments[0].id, { amount:100, method:'PIX', paidAt:'2026-10-01T12:00:00Z' }, 'USR-001');
+  snapshot = recordInstallmentPayment(snapshot, installments[1].id, { amount:100, method:'PIX', paidAt:'2026-10-01T12:05:00Z' }, 'USR-001');
+  snapshot = recordInstallmentPayment(snapshot, installments[2].id, { amount:50, method:'PIX', paidAt:'2026-10-02T09:00:00Z' }, 'USR-001');
+
+  let rental = snapshot.rentals.find((item) => item.id === rentalId);
+  let parent = snapshot.ledger.find((item) => item.kind === 'receivable' && item.rentalId === rentalId);
+  let summary = getFinancialSummary(snapshot);
+  assert.equal(parent.paidAmount, 250);
+  assert.equal(parent.status, 'partial');
+  assert.equal(rental.paymentStatus, 'aberto');
+  assert.equal(summary.grossRevenue, 500);
+  assert.equal(summary.paidAmount, 250);
+  assert.equal(summary.openAmount, 250);
+  assert.throws(() => registerPayment(snapshot, rentalId, 10, 'PIX', 'USR-001'), /agenda diária|diárias/i);
+
+  snapshot = recordInstallmentPayment(snapshot, installments[2].id, { amount:50, method:'PIX', paidAt:'2026-10-02T09:05:00Z' }, 'USR-001');
+  snapshot = recordInstallmentPayment(snapshot, installments[3].id, { amount:100, method:'PIX', paidAt:'2026-10-03T09:00:00Z' }, 'USR-001');
+  snapshot = recordInstallmentPayment(snapshot, installments[4].id, { amount:100, method:'PIX', paidAt:'2026-10-04T09:00:00Z' }, 'USR-001');
+
+  rental = snapshot.rentals.find((item) => item.id === rentalId);
+  parent = snapshot.ledger.find((item) => item.kind === 'receivable' && item.rentalId === rentalId);
+  summary = getFinancialSummary(snapshot);
+  assert.equal(parent.paidAmount, 500);
+  assert.equal(parent.status, 'paid');
+  assert.equal(rental.paymentStatus, 'pago');
+  assert.equal(summary.grossRevenue, 500);
+  assert.equal(summary.paidAmount, 500);
+  assert.equal(summary.openAmount, 0);
+  assert.equal(snapshot.audit.filter((item) => item.action === 'billing_installment.paid').length, 6);
 });
