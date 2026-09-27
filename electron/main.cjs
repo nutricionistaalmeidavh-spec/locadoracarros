@@ -7,6 +7,7 @@ const { SqliteStore }=require('./sqlite-store.cjs');
 const { startSyncServer }=require('./sync-server.cjs');
 
 let syncInfo=null,store=null,syncServer=null;
+if(process.env.LOCADORA_E2E_USER_DATA)app.setPath('userData',path.resolve(process.env.LOCADORA_E2E_USER_DATA));
 
 function tokenFromSqlite(){
   const current=store.get('sync:token');if(current)return current;
