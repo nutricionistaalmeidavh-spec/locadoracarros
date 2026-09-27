@@ -18,3 +18,11 @@ export async function restoreBackupEnvelope(raw) {
   if (actual !== envelope.checksum) throw new Error('Falha de integridade do backup.');
   return envelope.snapshot;
 }
+
+export function isLegacyBackupPayload(raw) {
+  let value;
+  try { value = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return false; }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  if (value.format === 'artisys-locadora-backup') return false;
+  return Array.isArray(value.customers) || Array.isArray(value.vehicles) || Array.isArray(value.rentals) || Array.isArray(value.expenses);
+}
