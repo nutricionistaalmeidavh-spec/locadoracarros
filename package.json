@@ -11,7 +11,7 @@
     "check": "node --check src/domain/auth.mjs && node --check src/domain/rental.mjs && node --check src/domain/backup.mjs && node --check src/domain/p1.mjs && node --check src/domain/inspection.mjs && node --check src/domain/maintenance.mjs && node --check src/domain/alerts.mjs && node --check src/domain/reports.mjs && node --check src/domain/documents.mjs && node --check src/domain/sync.mjs && node --check src/domain/offline.mjs && node --check src/domain/commercial.mjs && node --check src/domain/commercial-finance.mjs && node --check src/storage/pwa-sqlite.mjs && node --check src/storage/repository.mjs && node --check src/sync/client.mjs && node --check src/ui/common.mjs && node --check src/ui/reservas.mjs && node --check src/ui/cadastros.mjs && node --check src/ui/financeiro.mjs && node --check src/ui/system.mjs && node --check src/ui/p1.mjs && node --check src/ui/p2.mjs && node --check src/ui/commercial.mjs && node --check src/app.mjs && node --check electron/sqlite-store.cjs && node --check electron/main.cjs && node --check electron/preload.cjs && node --check electron/sync-server.cjs && node --check scripts/prepare-pwa.mjs && node --check sw.js",
     "desktop": "electron .",
     "dist": "npm run pwa:prepare && electron-builder --win nsis",
-    "qa:install": "npm install --prefix qa/artisys-qa",
+    "qa:install": "npm install --prefix qa/artisys-qa --package-lock=false --no-audit --no-fund",
     "qa:quick": "node qa/artisys-qa/src/cli.mjs quick --config qa/artisys-qa/locadora.config.json",
     "qa:full": "node qa/artisys-qa/src/cli.mjs full --config qa/artisys-qa/locadora.config.json",
     "qa:release": "node qa/artisys-qa/src/cli.mjs release --config qa/artisys-qa/locadora.config.json",
@@ -20,7 +20,8 @@
     "e2e": "node --test --test-concurrency=1 qa/e2e/*.test.cjs",
     "e2e:smoke": "node --test qa/e2e/smoke.test.cjs",
     "verify": "npm run check && npm test && npm run coverage:vertical",
-    "release:check": "npm run verify && npm run coverage && npm run e2e && npm run qa:release"
+    "release:check": "npm run verify && npm run coverage && npm run e2e && npm run qa:release",
+    "ci:install": "npm install --no-audit --no-fund"
   },
   "main": "electron/main.cjs",
   "devDependencies": {
