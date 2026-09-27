@@ -20,8 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
+      - run: npm install --ignore-scripts --no-audit --no-fund
       - run: npm run qa:install
       - name: Static, domain, persistence, sync and vertical gates
         run: npm run verify
