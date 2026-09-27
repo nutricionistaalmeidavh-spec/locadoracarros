@@ -13,8 +13,14 @@
   "electron": {
     "entry": "../../electron/main.cjs",
     "env": {
-      "LOCADORA_E2E_USER_DATA": "./qa-artifacts/electron-profile"
-    }
+      "LOCADORA_E2E_USER_DATA": "./qa-artifacts/electron-profile",
+      "ELECTRON_ENABLE_LOGGING": "1"
+    },
+    "args": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage"
+    ]
   },
   "environments": {
     "local": {}
