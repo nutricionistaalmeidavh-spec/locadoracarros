@@ -1,4 +1,5 @@
-import { createRental, getFinancialSummary, moveRental } from '../domain/rental.mjs';
+import { getFinancialSummary, moveRental } from '../domain/rental.mjs';
+import { createRentalWithBilling } from '../domain/daily-billing.mjs';
 import { can } from '../domain/auth.mjs';
 import { closeModal, date, esc, modal, money, toast } from './common.mjs';
 
@@ -29,10 +30,10 @@ function rentalRow(r,snapshot,sessionUser) {
 function showRentalForm(ctx){
   const {snapshot,sessionUser,save}=ctx;
   if(!snapshot.customers.length||!snapshot.vehicles.length){toast('Cadastre ao menos um cliente e um veículo.');return;}
-  modal('Nova reserva',`<form id="rental-form" class="form-grid"><label>Cliente<select name="customerId">${snapshot.customers.filter(c=>c.active).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label>Veículo<select name="vehicleId">${snapshot.vehicles.filter(v=>v.availability!=='manutencao').map(v=>`<option value="${v.id}">${esc(v.model)} · ${esc(v.plate)}</option>`).join('')}</select></label><label>Retirada<input type="datetime-local" name="pickupAt" required></label><label>Devolução<input type="datetime-local" name="returnAt" required></label><label>Diária<input type="number" name="dailyRate" min="0.01" step="0.01" required></label><label>Prioridade<select name="priority"><option>Media</option><option>Alta</option><option>Baixa</option></select></label><label class="full">Observações<textarea name="notes"></textarea></label><div class="full modal-actions"><button type="button" data-close>Cancelar</button><button class="primary">Salvar reserva</button></div></form>`);
+  modal('Nova reserva',`<form id="rental-form" class="form-grid"><label>Cliente<select name="customerId">${snapshot.customers.filter(c=>c.active).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label>Veículo<select name="vehicleId">${snapshot.vehicles.filter(v=>v.availability!=='manutencao').map(v=>`<option value="${v.id}">${esc(v.model)} · ${esc(v.plate)}</option>`).join('')}</select></label><label>Retirada<input type="datetime-local" name="pickupAt" required></label><label>Devolução<input type="datetime-local" name="returnAt" required></label><label>Diária<input type="number" name="dailyRate" min="0.01" step="0.01" required></label><label>Recebimento<select name="billingMode"><option value="total">Receber valor total</option><option value="daily">Receber por diária</option></select></label><label>Prioridade<select name="priority"><option>Media</option><option>Alta</option><option>Baixa</option></select></label><label class="full">Observações<textarea name="notes"></textarea></label><div class="full modal-actions"><button type="button" data-close>Cancelar</button><button class="primary">Salvar reserva</button></div></form>`);
   const form=document.querySelector('#rental-form'), vehicleSelect=form.elements.vehicleId;
   const updateRate=()=>{const v=snapshot.vehicles.find(x=>x.id===vehicleSelect.value);form.elements.dailyRate.value=v?.dailyRate||''}; vehicleSelect.onchange=updateRate;updateRate();
-  form.onsubmit=e=>{e.preventDefault();const fd=Object.fromEntries(new FormData(form));try{save(createRental(snapshot,{...fd,attendantId:sessionUser.id,dailyRate:Number(fd.dailyRate)},sessionUser.id));closeModal();toast('Reserva criada.');}catch(err){toast(err.message)}};
+  form.onsubmit=e=>{e.preventDefault();const fd=Object.fromEntries(new FormData(form));try{save(createRentalWithBilling(snapshot,{...fd,attendantId:sessionUser.id,dailyRate:Number(fd.dailyRate)},sessionUser.id));closeModal();toast(fd.billingMode==='daily'?'Reserva e diárias criadas.':'Reserva criada.');}catch(err){toast(err.message)}};
 }
 
 function printContract(id,snapshot){
