@@ -22,6 +22,11 @@
       "name": "Entrar"
     },
     {
+      "action": "waitFor",
+      "selector": ".session",
+      "timeoutMs": 30000
+    },
+    {
       "action": "expectText",
       "selector": ".session",
       "expected": "Administrador"

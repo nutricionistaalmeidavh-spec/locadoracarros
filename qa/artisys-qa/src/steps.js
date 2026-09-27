@@ -31,7 +31,7 @@ export async function executeStep({ page, step, index, screenshotsDir, baseURL, 
     case 'waitFor': await locator(page, step).waitFor({ state: step.state || 'visible', timeout: step.timeoutMs }); break;
     case 'waitForTimeout': await page.waitForTimeout(step.timeoutMs ?? 250); break;
     case 'expectVisible': {
-      if (!(await locator(page, step).isVisible())) throw new Error(`${label}: expected locator to be visible`);
+      await locator(page, step).waitFor({ state: 'visible', timeout: step.timeoutMs ?? 30000 });
       break;
     }
     case 'expectText': {

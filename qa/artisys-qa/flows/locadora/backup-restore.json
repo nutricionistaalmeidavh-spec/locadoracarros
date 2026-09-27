@@ -31,7 +31,12 @@
     },
     {
       "action": "expectVisible",
-      "selector": "#backup-file"
+      "selector": "label.file-button"
+    },
+    {
+      "action": "waitFor",
+      "selector": "#backup-file",
+      "state": "attached"
     }
   ]
 }

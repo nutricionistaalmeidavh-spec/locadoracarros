@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import { chromium, _electron as electron } from 'playwright';
 import { attachPageTelemetry } from './telemetry.js';
 import { executeStep } from './steps.js';
@@ -60,6 +61,7 @@ export async function runQaFlow({
   let context;
   let page;
   let electronApp;
+  let isolatedUserData;
   let frameRecorder;
   let nativeVideo;
   let consumerProcess;
@@ -91,11 +93,16 @@ export async function runQaFlow({
     if (manifest.mode === 'electron') {
       const entry = path.resolve(rootDir, manifest.electron.entry);
       const executablePath = manifest.electron.executablePath ? path.resolve(rootDir, manifest.electron.executablePath) : undefined;
+      const isolatedEnv = {};
+      if (manifest.electron.isolatedUserDataEnv) {
+        isolatedUserData = await fs.mkdtemp(path.join(os.tmpdir(), 'artisys-qa-electron-'));
+        isolatedEnv[manifest.electron.isolatedUserDataEnv] = isolatedUserData;
+      }
       electronApp = await electron.launch({
         args: [entry, ...(manifest.electron.args || [])],
         executablePath,
         cwd: rootDir,
-        env: { ...process.env, ...(manifest.electron.env || {}), ...(environment.env || {}) },
+        env: { ...process.env, ...(manifest.electron.env || {}), ...(environment.env || {}), ...isolatedEnv },
         timeout: manifest.launchTimeoutMs || 30000,
       });
       context = electronApp.context();
@@ -168,6 +175,7 @@ export async function runQaFlow({
     if (context) await context.tracing.stop({ path: traceFile }).catch(() => {});
     if (frameRecorder) videoFile = await frameRecorder.stop(path.join(outputDir, 'video.mp4'));
     if (electronApp) await electronApp.close().catch(() => {});
+    if (isolatedUserData) await fs.rm(isolatedUserData, { recursive: true, force: true }).catch(() => {});
     if (manifest.mode === 'web' && context) await context.close().catch(() => {});
     if (nativeVideo) {
       try {
