@@ -1,7 +1,7 @@
 function clone(value){return value==null?value:(typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value)));}
 function stamp(value){for(const key of ['updatedAt','completedAt','paidAt','createdAt','at','dueAt']){const time=Date.parse(value?.[key]??'');if(Number.isFinite(time))return time;}return 0;}
 function snapshotStamp(snapshot){const value=Date.parse(snapshot?.updatedAt??'');return Number.isFinite(value)?value:0;}
-const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','alertState','contractTemplates','issuedContracts','billingPlans','billingInstallments','collectionActions'];
+const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','contractTemplates','issuedContracts','billingPlans','billingInstallments','collectionActions'];
 
 function mergeCollection(server=[],client=[]){
   const map=new Map();
@@ -24,6 +24,7 @@ export function mergeSnapshots(serverSnapshot,clientSnapshot){
   const merged={...server};
   for(const key of COLLECTIONS)if(Array.isArray(server[key])||Array.isArray(client[key]))merged[key]=mergeCollection(server[key],client[key]);
   const clientNewer=snapshotStamp(client)>snapshotStamp(server);
+  merged.alertState={...(server.alertState&&typeof server.alertState==='object'&&!Array.isArray(server.alertState)?server.alertState:{}),...(client.alertState&&typeof client.alertState==='object'&&!Array.isArray(client.alertState)?client.alertState:{})};
   merged.settings=clone(clientNewer?client.settings??server.settings:server.settings??client.settings);
   merged.version=Math.max(Number(server.version)||0,Number(client.version)||0);
   merged.updatedAt=new Date(Math.max(snapshotStamp(server),snapshotStamp(client),Date.now())).toISOString();
