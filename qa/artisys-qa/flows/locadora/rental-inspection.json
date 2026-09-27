@@ -1,0 +1,42 @@
+{
+  "name": "rental-inspection",
+  "steps": [
+    {
+      "action": "fill",
+      "label": "Usuário",
+      "value": "admin"
+    },
+    {
+      "action": "fill",
+      "label": "Senha",
+      "value": "1234"
+    },
+    {
+      "action": "click",
+      "role": "button",
+      "name": "Entrar"
+    },
+    {
+      "action": "click",
+      "selector": "[data-nav=\"reservas\"]"
+    },
+    {
+      "action": "expectVisible",
+      "selector": "#new-rental"
+    },
+    {
+      "action": "click",
+      "selector": "[data-nav=\"vistorias\"]"
+    },
+    {
+      "action": "expectText",
+      "selector": "#view",
+      "expected": "Vistorias"
+    },
+    {
+      "action": "screenshot",
+      "name": "rental-inspection-state",
+      "fullPage": true
+    }
+  ]
+}
