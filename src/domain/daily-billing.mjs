@@ -13,6 +13,8 @@ export function markRentalSchedulePurpose(input, planId) {
   if (!plan) throw new Error('Plano de cobrança não encontrado.');
   plan.purpose = 'rental_schedule';
   plan.updatedAt = new Date().toISOString();
+  const installmentIds = new Set(snapshot.billingInstallments.filter((item) => item.planId === plan.id).map((item) => item.id));
+  for (const entry of snapshot.ledger ?? []) if (entry.kind === 'billing_receivable' && installmentIds.has(entry.installmentId)) entry.billingPurpose = 'rental_schedule';
   return snapshot;
 }
 
@@ -34,6 +36,7 @@ export function createRentalWithBilling(input, draft={}, actorId) {
 
   snapshot = createBillingPlan(snapshot, {
     rentalId:rental.id,
+    purpose:'rental_schedule',
     frequency:'daily',
     firstDueAt:rental.pickupAt,
     amount:rental.dailyRate,
@@ -41,10 +44,8 @@ export function createRentalWithBilling(input, draft={}, actorId) {
     finePercent:0,
     interestMonthlyPercent:0
   }, actorId);
-  const plan = snapshot.billingPlans.find((item) => item.rentalId === rental.id && item.frequency === 'daily');
+  const plan = snapshot.billingPlans.find((item) => item.rentalId === rental.id && item.frequency === 'daily' && item.purpose === 'rental_schedule');
   if (!plan) throw new Error('Não foi possível criar a agenda diária da locação.');
-  plan.purpose = 'rental_schedule';
-  plan.updatedAt = new Date().toISOString();
   const persistedRental = snapshot.rentals.find((item) => item.id === rental.id);
   persistedRental.billingMode = 'daily';
   persistedRental.updatedAt = plan.updatedAt;
