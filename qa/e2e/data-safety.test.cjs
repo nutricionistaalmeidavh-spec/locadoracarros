@@ -28,8 +28,20 @@ test('backup: export, alter, restore, synchronize and reload preserve restored d
  try{
   const p=ctx.page;await login(p);await company(p,'Empresa do backup');await sync(p);
   await p.locator('[data-nav="backup"]').click();
-  const downloadPromise=p.waitForEvent('download');await p.locator('#backup-create').click();
-  const download=await downloadPromise;const backupPath=path.join(ctx.dir,'backup-exportado.json');await download.saveAs(backupPath);
+  const backupPath=path.join(ctx.dir,'backup-exportado.json');
+  // Electron owns native downloads; save the actual emitted DownloadItem.
+  await ctx.app.evaluate(({session},file)=>{
+   globalThis.qaDownload=new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error('Electron backup download timeout')),30000);
+    session.defaultSession.once('will-download',(_event,item)=>{
+     item.setSavePath(file);
+     item.once('done',(_event,state)=>{clearTimeout(timer);state==='completed'?resolve(state):reject(new Error(`Download ${state}`));});
+    });
+   });
+   globalThis.qaDownload.catch(()=>{});
+  },backupPath);
+  await p.locator('#backup-create').click();
+  assert.equal(await ctx.app.evaluate(()=>globalThis.qaDownload),'completed');
   const envelope=JSON.parse(await fs.readFile(backupPath,'utf8'));
   assert.equal(envelope.snapshot.settings.companyName,'Empresa do backup');
   await company(p,'Empresa alterada');await sync(p);
