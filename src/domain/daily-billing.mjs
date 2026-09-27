@@ -1,5 +1,5 @@
 import { createRental } from './rental.mjs';
-import { createBillingPlan, ensureCommercialSnapshot, installmentBalance } from './commercial.mjs';
+import { createBillingPlan, ensureCommercialSnapshot, installmentBalance, recordInstallmentPayment } from './commercial.mjs';
 
 const round = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 
@@ -18,6 +18,10 @@ export function markRentalSchedulePurpose(input, planId) {
 
 export function activeRentalSchedulePlans(snapshot) {
   return (snapshot?.billingPlans ?? []).filter((plan) => plan.active !== false && billingPlanPurpose(plan) === 'rental_schedule');
+}
+
+function schedulePlanForRental(snapshot, rentalId) {
+  return activeRentalSchedulePlans(snapshot).find((item) => item.rentalId === rentalId && item.frequency === 'daily') ?? null;
 }
 
 export function createRentalWithBilling(input, draft={}, actorId) {
@@ -49,7 +53,7 @@ export function createRentalWithBilling(input, draft={}, actorId) {
 
 export function dailyBillingSummary(input, rentalId, asOf=new Date().toISOString()) {
   const snapshot = ensureCommercialSnapshot(input);
-  const plan = activeRentalSchedulePlans(snapshot).find((item) => item.rentalId === rentalId && item.frequency === 'daily');
+  const plan = schedulePlanForRental(snapshot, rentalId);
   if (!plan) return { rentalId, planId:null, totalCount:0, paidCount:0, pendingCount:0, partialCount:0, overdueCount:0, received:0, openAmount:0, rows:[] };
   const rows = snapshot.billingInstallments
     .filter((item) => item.planId === plan.id && item.status !== 'cancelled')
@@ -71,4 +75,20 @@ export function dailyBillingSummary(input, rentalId, asOf=new Date().toISOString
     openAmount:round(rows.reduce((sum,row) => sum + row.openAmount, 0)),
     rows
   };
+}
+
+export function nextDailyInstallment(input, rentalId) {
+  const snapshot = ensureCommercialSnapshot(input);
+  const plan = schedulePlanForRental(snapshot, rentalId);
+  if (!plan) return null;
+  return snapshot.billingInstallments
+    .filter((item) => item.planId === plan.id && !['paid','cancelled'].includes(item.status))
+    .sort((a,b) => Number(a.sequence || 0) - Number(b.sequence || 0))[0] ?? null;
+}
+
+export function recordNextDailyPayment(input, rentalId, payment={}, actorId) {
+  const snapshot = ensureCommercialSnapshot(input);
+  const installment = nextDailyInstallment(snapshot, rentalId);
+  if (!installment) throw new Error('Não há diária pendente para esta locação.');
+  return recordInstallmentPayment(snapshot, installment.id, payment, actorId);
 }
