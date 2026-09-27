@@ -17,9 +17,29 @@ export function buildSimplePdf({title='Documento',lines=[]}={}){
 
 function rentalData(snapshot,rentalId){const rental=snapshot.rentals.find(item=>item.id===rentalId);if(!rental)throw new Error('Locação não encontrada.');const customer=snapshot.customers.find(item=>item.id===rental.customerId);const vehicle=snapshot.vehicles.find(item=>item.id===rental.vehicleId);return{rental,customer,vehicle};}
 
-export function rentalContractPdf(input,rentalId){const snapshot=ensureP1Snapshot(input);const{rental,customer,vehicle}=rentalData(snapshot,rentalId);const settings=snapshot.settings??{};return buildSimplePdf({title:`CONTRATO DE LOCACAO ${rental.id}`,lines:[settings.companyName??'Sistema Locadora',`Documento: ${settings.document??''}`,`Cliente: ${customer?.name??''} - ${customer?.document??''}`,`Veiculo: ${vehicle?.model??''} - Placa ${vehicle?.plate??''}`,`Retirada: ${date(rental.pickupAt??rental.pickupDate)}`,`Devolucao: ${date(rental.returnAt??rental.returnDate)}`,`Valor total: ${money(rental.total)}`,`Status financeiro: ${rental.paymentStatus??'aberto'}`,'',`Observacoes: ${rental.notes??''}`]});}
+export function rentalContractPdf(input,rentalId){const snapshot=ensureP1Snapshot(input);const{rental,customer,vehicle}=rentalData(snapshot,rentalId);const settings=snapshot.settings??{};return buildSimplePdf({title:`CONTRATO DE LOCACAO ${rental.id}`,lines:[settings.companyName??'Sistema Locadora',`Documento: ${settings.document??''}`,`Cliente: ${customer?.name??''} - ${customer?.document??''}`,`Veiculo: ${vehicle?.model??''} - Placa ${vehicle?.plate??''}`,`Retirada: ${date(rental.pickupAt??rental.pickupDate)}`,`Devolucao: ${rental.returnAt?date(rental.returnAt):'Locacao continua'}`,`Valor total: ${money(rental.total)}`,`Status financeiro: ${rental.paymentStatus??'aberto'}`,'',`Observacoes: ${rental.notes??''}`]});}
 
 export function rentalReceiptPdf(input,rentalId){const snapshot=ensureP1Snapshot(input);const{rental,customer}=rentalData(snapshot,rentalId);const paid=(rental.payments??[]).reduce((sum,item)=>sum+Number(item.amount||0),0);return buildSimplePdf({title:`RECIBO ${rental.id}`,lines:[`Cliente: ${customer?.name??''}`,`Valor recebido: ${money(paid)}`,`Saldo: ${money(Math.max(Number(rental.total||0)-paid,0))}`,...(rental.payments??[]).map(item=>`${date(item.paidAt)} - ${item.method}: ${money(item.amount)}`)]});}
+
+export function dailyPaymentReceiptPdf(input,installmentId,paymentId){
+  const snapshot=ensureP1Snapshot(input),installment=snapshot.billingInstallments.find(item=>item.id===installmentId);
+  if(!installment)throw new Error('Diária não encontrada.');
+  const payment=(installment.payments??[]).find(item=>item.id===paymentId);
+  if(!payment)throw new Error('Pagamento da diária não encontrado.');
+  const{rental,customer,vehicle}=rentalData(snapshot,installment.rentalId);
+  return buildSimplePdf({title:`RECIBO DIARIA ${rental.id}`,lines:[
+    `Cliente: ${customer?.name??''} - ${customer?.document??''}`,
+    `Veiculo: ${vehicle?.model??''} - Placa ${vehicle?.plate??''}`,
+    `Locacao: ${rental.id}`,
+    `Diaria: ${installment.sequence}`,
+    `Data da diaria: ${String(installment.dueAt??'').slice(0,10)}`,
+    `Valor da diaria: ${money(installment.amount)}`,
+    `Valor recebido: ${money(payment.amount)}`,
+    `Forma: ${payment.method??''}`,
+    `Recebido em: ${date(payment.paidAt)}`,
+    `Pagamento: ${payment.id}`
+  ]});
+}
 
 export function inspectionPdf(input,inspectionId){const snapshot=ensureP1Snapshot(input);const value=snapshot.inspections.find(item=>item.id===inspectionId);if(!value)throw new Error('Vistoria não encontrada.');const vehicle=snapshot.vehicles.find(item=>item.id===value.vehicleId);return buildSimplePdf({title:`VISTORIA ${value.id}`,lines:[`Veiculo: ${vehicle?.model??''} - ${vehicle?.plate??''}`,`Tipo: ${value.kind==='return'?'Devolucao':'Retirada'}`,`KM: ${value.mileage??''}`,`Combustivel: ${value.fuelLevel??''}`,`Fotos: ${value.photos?.length??0}`,`Avarias: ${value.damages?.length??0}`,`Observacoes: ${value.notes??''}`,...(value.checklist??[]).map(item=>`${item.done?'[OK]':'[ ]'} ${item.label}`)]});}
 
