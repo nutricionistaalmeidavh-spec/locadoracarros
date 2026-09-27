@@ -1,37 +1,20 @@
-name: Locadora CI
+name: Locadora Verify
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  core:
-    name: Check + Node tests
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-      - run: npm run check
-      - run: npm test
-
-  qa:
-    name: ArtiSys QA Electron
-    runs-on: ubuntu-latest
-    needs: core
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
-      LOCADORA_QA_ADMIN_PASSWORD: "1234"
+      LOCADORA_QA_ADMIN_PASSWORD: ${{ secrets.LOCADORA_QA_ADMIN_PASSWORD || '1234' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,12 +22,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Install ArtiSys QA
-        run: npm run qa:install
-      - name: Validate QA manifest
-        run: node qa/artisys-qa/src/cli.mjs validate --config qa/artisys-qa/locadora.config.json
-      - name: Run Electron QA
-        run: xvfb-run -a npm run qa:full
+      - run: npm run qa:install
+      - name: Static, domain, persistence, sync and vertical gates
+        run: npm run verify
+      - name: Code coverage gate
+        run: npm run coverage
+      - name: Electron E2E
+        run: timeout --signal=TERM --kill-after=30s 12m xvfb-run -a npm run e2e
+      - name: ArtiSys QA release gate
+        run: timeout --signal=TERM --kill-after=30s 12m xvfb-run -a npm run qa:release
       - name: Upload QA artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -53,5 +39,6 @@ jobs:
           path: |
             qa-artifacts/
             artifacts/
+            qa/reports/
           if-no-files-found: warn
           retention-days: 14
