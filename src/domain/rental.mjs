@@ -36,21 +36,31 @@ export function rentalDays(pickupAt, returnAt) {
   return Math.max(1, Math.ceil((end - start) / DAY));
 }
 
+function rentalEnd(rental){
+  if(rental?.status==='devolucao'||rental?.cancelledAt)return new Date(rental.returnAt??rental.continuousClosedAt??0).getTime();
+  if(rental?.periodMode==='continuous'&&!rental?.continuousClosedAt)return Infinity;
+  const value=new Date(rental?.returnAt??rental?.continuousClosedAt??'').getTime();
+  return Number.isFinite(value)?value:Infinity;
+}
+
 export function hasReservationConflict(snapshot, vehicleId, pickupAt, returnAt, ignoreRentalId = null) {
   const start = new Date(pickupAt).getTime();
-  const end = new Date(returnAt).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return true;
+  const end = returnAt==null||returnAt==='' ? Infinity : new Date(returnAt).getTime();
+  if (!Number.isFinite(start) || (!(end===Infinity)&&(!Number.isFinite(end)||end<=start))) return true;
   return snapshot.rentals.some((rental) => {
     if (rental.id === ignoreRentalId || rental.vehicleId !== vehicleId || rental.status === 'devolucao' || rental.cancelledAt) return false;
     const otherStart = new Date(rental.pickupAt).getTime();
-    const otherEnd = new Date(rental.returnAt).getTime();
+    const otherEnd = rentalEnd(rental);
+    if(!Number.isFinite(otherStart))return false;
     return start < otherEnd && end > otherStart;
   });
 }
 
 export function createRental(snapshot, draft, actorId) {
-  const days = rentalDays(draft.pickupAt, draft.returnAt);
-  if (hasReservationConflict(snapshot, draft.vehicleId, draft.pickupAt, draft.returnAt)) {
+  const continuous=draft.periodMode==='continuous'||draft.openEnded===true;
+  const days = continuous ? 1 : rentalDays(draft.pickupAt, draft.returnAt);
+  const returnAt=continuous?null:draft.returnAt;
+  if (hasReservationConflict(snapshot, draft.vehicleId, draft.pickupAt, returnAt)) {
     throw new Error('Conflito de reserva: o veículo já está comprometido neste período.');
   }
   if (!snapshot.customers.some((c) => c.id === draft.customerId && c.active)) throw new Error('Cliente inválido.');
@@ -59,13 +69,14 @@ export function createRental(snapshot, draft, actorId) {
   const now = new Date().toISOString();
   const rental = {
     id: entityId('LOC'), vehicleId:draft.vehicleId, customerId:draft.customerId, attendantId:draft.attendantId,
-    pickupAt:draft.pickupAt, returnAt:draft.returnAt, status:'reserva', priority:draft.priority ?? 'Media', notes:draft.notes ?? '',
+    pickupAt:draft.pickupAt, returnAt, periodMode:continuous?'continuous':'fixed', continuousClosedAt:null,
+    status:'reserva', priority:draft.priority ?? 'Media', notes:draft.notes ?? '',
     dailyRate:Number(draft.dailyRate), days, total:round(days * Number(draft.dailyRate)), payments:[], paymentStatus:'aberto',
     createdAt:now, updatedAt:now
   };
   next.rentals.unshift(rental);
   next.ledger.unshift({ id:nextId('FIN', next.ledger), kind:'receivable', rentalId:rental.id, vehicleId:rental.vehicleId, description:`Locação ${rental.id}`, amount:rental.total, paidAmount:0, status:'open', dueAt:rental.pickupAt, createdAt:now });
-  audit(next, actorId, 'rental.created', 'rental', rental.id, { vehicleId:rental.vehicleId, pickupAt:rental.pickupAt, returnAt:rental.returnAt, total:rental.total });
+  audit(next, actorId, 'rental.created', 'rental', rental.id, { vehicleId:rental.vehicleId, pickupAt:rental.pickupAt, returnAt:rental.returnAt, periodMode:rental.periodMode, total:rental.total });
   next.updatedAt = now;
   return next;
 }
@@ -79,6 +90,7 @@ export function moveRental(snapshot, rentalId, status, actorId) {
   const completed=(kind)=>next.inspections?.some(item=>item.rentalId===rental.id&&item.kind===kind&&item.status==='completed');
   if(status==='em_uso'&&!completed('checkout'))throw new Error('Conclua a vistoria de retirada antes de iniciar a locação.');
   if(status==='devolucao'&&!completed('return'))throw new Error('Conclua a vistoria de devolução antes de finalizar a locação.');
+  if(status==='devolucao'&&rental.periodMode==='continuous'&&!rental.continuousClosedAt)throw new Error('Encerre a diária contínua antes de finalizar a devolução.');
   rental.status = status;
   rental.updatedAt = new Date().toISOString();
   const vehicle = next.vehicles.find((v) => v.id === rental.vehicleId);
@@ -94,6 +106,8 @@ export function registerPayment(snapshot, rentalId, amount, method, actorId) {
   const next = clone(snapshot);
   const rental = next.rentals.find((r) => r.id === rentalId);
   if (!rental) throw new Error('Locação não encontrada.');
+  const hasDailySchedule=(next.billingPlans??[]).some((plan)=>plan.rentalId===rentalId&&plan.active!==false&&plan.purpose==='rental_schedule');
+  if(rental.billingMode==='daily'||hasDailySchedule)throw new Error('Esta locação usa agenda diária. Registre o recebimento pelas diárias.');
   const received = round(rental.payments.reduce((sum,p) => sum + p.amount, 0));
   if (received + value > rental.total + 0.001) throw new Error('Pagamento excede o saldo da locação.');
   const now = new Date().toISOString();
@@ -174,7 +188,7 @@ export function migrateLegacySnapshot(raw) {
     const dailyRate = Number(old.dailyRate ?? dailyLine?.unitPrice ?? 0);
     const days = Number(old.days ?? dailyLine?.quantity ?? rentalDays(pickupAt, returnAt));
     const total = round(old.total ?? days * dailyRate);
-    const rental = { ...old, pickupAt, returnAt, dailyRate, days, total, payments:old.payments ?? [], paymentStatus:old.paymentStatus ?? 'aberto' };
+    const rental = { ...old, pickupAt, returnAt, periodMode:old.periodMode??'fixed', dailyRate, days, total, payments:old.payments ?? [], paymentStatus:old.paymentStatus ?? 'aberto' };
     next.rentals.push(rental);
     const paid = round(rental.payments.reduce((s,p) => s + Number(p.amount || 0), 0));
     next.ledger.push({ id:nextId('FIN', next.ledger), kind:'receivable', rentalId:rental.id, vehicleId:rental.vehicleId, description:`Locação ${rental.id}`, amount:total, paidAmount:paid, status:paid >= total ? 'paid' : paid > 0 ? 'partial' : 'open', dueAt:pickupAt, createdAt:rental.createdAt ?? new Date().toISOString() });
