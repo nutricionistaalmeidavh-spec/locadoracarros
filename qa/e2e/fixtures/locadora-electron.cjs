@@ -1,5 +1,5 @@
 'use strict';
-const {_electron}=require('playwright');const {mkdtempSync,rmSync}=require('node:fs');const {tmpdir}=require('node:os');const {join,resolve}=require('node:path');
+const {_electron}=require('../../artisys-qa/node_modules/playwright');const {mkdtempSync,rmSync}=require('node:fs');const {tmpdir}=require('node:os');const {join,resolve}=require('node:path');
 async function launchLocadora(){
  const root=resolve(__dirname,'..','..','..');const dir=mkdtempSync(join(tmpdir(),'artisys-locadora-e2e-'));let app;
  try{
