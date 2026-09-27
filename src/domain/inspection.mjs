@@ -18,6 +18,8 @@ export function createInspection(input,{rentalId,kind='checkout'}={},actorId){
   if(!['checkout','return'].includes(kind))throw new Error('Tipo de vistoria inválido.');
   const rental=snapshot.rentals?.find(item=>item.id===rentalId);
   if(!rental)throw new Error('Locação não encontrada.');
+  if(kind==='checkout'&&!['reserva','retirada'].includes(rental.status))throw new Error('Vistoria de retirada exige locação em reserva/retirada.');
+  if(kind==='return'&&!['em_uso','locado','devolucao'].includes(rental.status))throw new Error('Vistoria de devolução exige locação em uso/devolução.');
   if(snapshot.inspections.some(item=>item.rentalId===rentalId&&item.kind===kind))throw new Error('Já existe uma vistoria deste tipo para a locação.');
   const now=new Date().toISOString();
   const value={
