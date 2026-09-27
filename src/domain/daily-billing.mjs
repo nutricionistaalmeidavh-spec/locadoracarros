@@ -93,3 +93,30 @@ export function recordNextDailyPayment(input, rentalId, payment={}, actorId) {
   if (!installment) throw new Error('Não há diária pendente para esta locação.');
   return recordInstallmentPayment(snapshot, installment.id, payment, actorId);
 }
+
+export function recordDailyPaymentAmount(input, rentalId, payment={}, actorId) {
+  let snapshot = ensureCommercialSnapshot(input);
+  const plan = schedulePlanForRental(snapshot, rentalId);
+  if (!plan) throw new Error('Esta locação não possui agenda diária ativa.');
+  const value = round(payment.amount);
+  if (!(value > 0)) throw new Error('Valor do pagamento deve ser maior que zero.');
+  const paidAt = payment.paidAt ?? new Date().toISOString();
+  const method = String(payment.method ?? 'PIX');
+  const installments = snapshot.billingInstallments
+    .filter((item) => item.planId === plan.id && !['paid','cancelled'].includes(item.status))
+    .sort((a,b) => Number(a.sequence || 0) - Number(b.sequence || 0));
+  const outstanding = round(installments.reduce((sum,item) => sum + Math.max(0, Number(item.amount || 0) - Number(item.paidAmount || 0)), 0));
+  if (value > outstanding + 0.001) throw new Error('Pagamento excede o saldo das diárias.');
+
+  let remaining = value;
+  for (const installment of installments) {
+    if (remaining <= 0.001) break;
+    const open = round(Math.max(0, Number(installment.amount || 0) - Number(installment.paidAmount || 0)));
+    if (open <= 0) continue;
+    const allocated = round(Math.min(open, remaining));
+    snapshot = recordInstallmentPayment(snapshot, installment.id, { amount:allocated, method, paidAt }, actorId);
+    remaining = round(remaining - allocated);
+  }
+  if (remaining > 0.001) throw new Error('Não foi possível distribuir todo o pagamento nas diárias.');
+  return snapshot;
+}
