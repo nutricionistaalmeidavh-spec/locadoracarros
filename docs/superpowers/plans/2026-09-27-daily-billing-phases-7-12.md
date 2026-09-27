@@ -1,6 +1,6 @@
 # Daily Billing Phases 7-12 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Complete phases 7-12 of daily rental billing: continuous rentals, controlled closure, daily delinquency, payment receipts, safe PC↔mobile concurrency, and release QA.
 
@@ -37,11 +37,9 @@
 - `ensureDailyInstallmentsUntil(input, rentalId, asOf, actorId)` grows a continuous schedule by elapsed rental days and updates rental/parent receivable totals.
 - `ensureOpenDailyRentals(input, asOf, actorId)` accrues every open continuous daily rental idempotently.
 
-- [ ] Write failing flow tests for one initial daily charge, no second charge at 23h59m, second charge after 24h, and idempotent repeated accrual.
-- [ ] Run focused tests and confirm RED.
-- [ ] Implement the domain behavior and app/UI integration.
-- [ ] Run focused tests and full suite.
-- [ ] Commit.
+- [x] Flow tests cover the initial charge, 23h59m boundary, new charge after 24h, and repeated idempotent accrual.
+- [x] Domain behavior and local app/UI accrual implemented.
+- [x] Focused and full test suites passed.
 
 ### Task 2: Phase 8 — Close a continuous rental
 
@@ -50,11 +48,9 @@
 **Interfaces:**
 - `closeContinuousDailyRental(input, rentalId, {returnAt}, actorId)` accrues the exact final number of days, marks generation closed, then uses the existing rental state machine to finish the return.
 
-- [ ] Write failing tests that closure requires the return inspection, closes generation, releases the vehicle, and leaves unpaid debt open.
-- [ ] Run focused tests and confirm RED.
-- [ ] Implement minimal close flow and block direct `devolucao` while a continuous schedule is still open.
-- [ ] Run focused tests and full suite.
-- [ ] Commit.
+- [x] Closure requires a completed return inspection.
+- [x] Closure stops future generation, releases the vehicle through the existing state machine, and leaves unpaid debt open.
+- [x] Focused and full test suites passed.
 
 ### Task 3: Phase 9 — Daily delinquency
 
@@ -63,11 +59,9 @@
 **Interfaces:**
 - `dailyDelinquencySummary(snapshot, asOf)` returns overdue daily count/value and rows enriched by rental/customer/vehicle IDs and daily sequence/date.
 
-- [ ] Write failing test for overdue daily charges versus due-today/future charges.
-- [ ] Run focused test and confirm RED.
-- [ ] Implement summary and daily overdue table in Financeiro.
-- [ ] Run focused tests and full suite.
-- [ ] Commit.
+- [x] Overdue daily charges are distinguished from due-today/future charges.
+- [x] Daily overdue table implemented in Financeiro.
+- [x] Focused and full test suites passed.
 
 ### Task 4: Phase 10 — Receipt/PDF per daily payment
 
@@ -76,10 +70,8 @@
 **Interfaces:**
 - `dailyPaymentReceiptPdf(input, installmentId, paymentId)` generates a PDF with customer, vehicle/plate, rental ID, daily date/sequence, amount received, method and timestamp.
 
-- [ ] Write failing PDF test and confirm RED.
-- [ ] Implement document function and per-payment receipt buttons in daily control.
-- [ ] Run focused tests and full suite.
-- [ ] Commit.
+- [x] PDF content test implemented and passing.
+- [x] Per-payment receipt buttons implemented in daily control.
 
 ### Task 5: Phase 11 — PC↔mobile payment concurrency
 
@@ -88,20 +80,25 @@
 **Interfaces:**
 - `mergeSnapshots` merges nested installment payments by global payment ID, reconciles rental history/ledger, preserves legitimate partial payments, and records excess concurrent payments in `installment.paymentConflicts` instead of counting them.
 
-- [ ] Write failing tests for different-installment concurrent payments, 60+40 same-installment merge, and 100+100 same-installment conflict without double receipt.
-- [ ] Run focused tests and confirm RED.
-- [ ] Implement specialized billing-installment merge and schedule reconciliation.
-- [ ] Run focused tests and full suite.
-- [ ] Commit.
+- [x] Different-installment concurrent payments merge.
+- [x] Same-installment 60+40 merge reaches exactly the daily value.
+- [x] Same-installment 100+100 records an explicit `concurrent_overpayment` conflict without double receipt.
+- [x] Rental history, installment ledger and parent receivable are reconciled after merge.
 
 ### Task 6: Phase 12 — Release QA
 
-**Files:** `tests/daily-billing-release.test.mjs`, `qa/e2e/daily-billing.test.cjs`, PR metadata.
+**Files:** `tests/daily-billing-release.test.mjs`, `qa/e2e/daily-billing.test.cjs`, `qa/artisys-qa/flows/locadora/daily-billing.json`, `qa/artisys-qa/locadora.config.json`, PR metadata.
 
-**Interfaces:** release gate only.
+- [x] Release scenarios cover 10×R$80 = R$800, R$30+R$50 partial-to-paid, 5×R$100 without double-counting, backup/restore, and payment concurrency.
+- [x] Electron E2E covers multiple daily payment and continuous-rental creation.
+- [x] ArtiSys QA contains a dedicated `daily-billing` flow.
+- [x] Unit/domain tests, coverage, Electron E2E, ArtiSys QA release, Linux verify and Windows packaged-app workflow passed.
 
-- [ ] Add release scenarios: 10×R$80 = R$800 and all paid; R$30+R$50 partial-to-paid; 5×R$100 never becomes R$1,000; backup/restore preserves daily state; concurrency conflict remains non-double-counted.
-- [ ] Extend Electron E2E for continuous rental creation/accrual and multiple payment path where stable.
-- [ ] Run `npm run verify`, `npm run coverage`, `npm run e2e`, `npm run qa:release` through CI.
-- [ ] Require both Locadora Verify and Locadora Windows Build to be green.
-- [ ] Update PR title/body to phases 0-12 and leave ready for merge.
+## Verified Result Before This Documentation-Only Commit
+
+- Domain/unit tests: 80/80 passed.
+- Vertical coverage: 9/9 areas covered.
+- Electron E2E: 6/6 passed.
+- ArtiSys QA release: 7/7 flows passed, including `daily-billing` 32/32 steps.
+- Locadora Verify #70: passed.
+- Locadora Windows Build #62: passed, including installer validation and packaged Windows application test.
