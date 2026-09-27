@@ -5,10 +5,11 @@ import {
   createRental,
   registerPayment,
   addExpense,
-  getFinancialSummary
+  getFinancialSummary,
+  addCustomer
 } from '../src/domain/rental.mjs';
 import { can, authenticate, seedUsers } from '../src/domain/auth.mjs';
-import { createBackupEnvelope, restoreBackupEnvelope } from '../src/domain/backup.mjs';
+import { createBackupEnvelope, restoreBackupEnvelope, isLegacyBackupPayload } from '../src/domain/backup.mjs';
 
 function baseSnapshot() {
   const snapshot = createEmptySnapshot();
@@ -72,3 +73,10 @@ test('migração 0.1.5 preserva clientes, frota, locações, pagamentos e despes
   assert.equal(getFinancialSummary(migrated).expensesAmount, 30);
   assert.equal(migrated.settings.companyName, 'Locadora Teste');
 });
+
+
+test('P0 restore não classifica envelope adulterado como legado',async()=>{const raw=await createBackupEnvelope(baseSnapshot());const value=JSON.parse(raw);value.checksum='bad';const tampered=JSON.stringify(value);assert.equal(isLegacyBackupPayload(tampered),false);await assert.rejects(()=>restoreBackupEnvelope(tampered),/integridade/i);assert.equal(isLegacyBackupPayload(JSON.stringify({version:1,customers:[],vehicles:[],rentals:[]})),true);});
+
+test('P0 novos IDs são únicos mesmo partindo do mesmo snapshot offline',()=>{const a=addCustomerForTest(baseSnapshot(),'Ana A');const b=addCustomerForTest(baseSnapshot(),'Ana B');assert.notEqual(a.customers[0].id,b.customers[0].id);});
+
+function addCustomerForTest(s,name){return addCustomer(s,{name,document:name,phone:'1'},'USR-001');}
