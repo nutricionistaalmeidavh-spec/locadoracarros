@@ -6,7 +6,8 @@ import {
   registerPayment,
   addExpense,
   getFinancialSummary,
-  addCustomer
+  addCustomer,
+  addVehicle
 } from '../src/domain/rental.mjs';
 import { can, authenticate, seedUsers } from '../src/domain/auth.mjs';
 import { createBackupEnvelope, restoreBackupEnvelope, isLegacyBackupPayload } from '../src/domain/backup.mjs';
@@ -80,3 +81,6 @@ test('P0 restore não classifica envelope adulterado como legado',async()=>{cons
 test('P0 novos IDs são únicos mesmo partindo do mesmo snapshot offline',()=>{const a=addCustomerForTest(baseSnapshot(),'Ana A');const b=addCustomerForTest(baseSnapshot(),'Ana B');assert.notEqual(a.customers[0].id,b.customers[0].id);});
 
 function addCustomerForTest(s,name){return addCustomer(s,{name,document:name,phone:'1'},'USR-001');}
+
+
+test('P0 clientes e frota: cadastro gera identidades independentes e preserva dados',()=>{let s=baseSnapshot();const beforeCustomers=s.customers.length,beforeVehicles=s.vehicles.length;s=addCustomer(s,{name:'Bruno',document:'2',phone:'2'},'USR-001');s=addVehicle(s,{model:'Mobi',plate:'XYZ9A99',year:'2026',mileage:0,category:'Econômico',color:'Branco',dailyRate:120,purchasePrice:60000},'USR-001');assert.equal(s.customers.length,beforeCustomers+1);assert.equal(s.vehicles.length,beforeVehicles+1);assert.match(s.customers.at(-1).id,/^CLI-/);assert.match(s.vehicles.at(-1).id,/^VEI-/);assert.equal(s.vehicles.at(-1).plate,'XYZ9A99');});
