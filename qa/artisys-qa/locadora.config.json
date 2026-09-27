@@ -29,6 +29,7 @@
     "smoke": "flows/locadora/smoke.json",
     "admin-navigation": "flows/locadora/admin-navigation.json",
     "rental-inspection": "flows/locadora/rental-inspection.json",
+    "daily-billing": "flows/locadora/daily-billing.json",
     "backup-restore": "flows/locadora/backup-restore.json",
     "fleet-permissions": "flows/locadora/fleet-permissions.json",
     "sync-screen": "flows/locadora/sync-screen.json"
