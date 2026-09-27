@@ -1,7 +1,7 @@
 function clone(value){return value==null?value:(typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value)));}
 function stamp(value){for(const key of ['updatedAt','completedAt','paidAt','createdAt','at','dueAt']){const time=Date.parse(value?.[key]??'');if(Number.isFinite(time))return time;}return 0;}
 function snapshotStamp(snapshot){const value=Date.parse(snapshot?.updatedAt??'');return Number.isFinite(value)?value:0;}
-const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','alertState','contractTemplates','issuedContracts','billingPlans','billingInstallments','collectionActions'];
+const COLLECTIONS=['customers','vehicles','rentals','expenses','users','ledger','audit','inspections','maintenance','contractTemplates','issuedContracts','billingPlans','billingInstallments','collectionActions'];
 
 function mergeCollection(server=[],client=[]){
   const map=new Map();
@@ -17,12 +17,24 @@ function mergeCollection(server=[],client=[]){
   return [...map.values()];
 }
 
+function alertStamp(value){const time=Date.parse(value?.updatedAt??value?.at??'');return Number.isFinite(time)?time:0;}
+function mergeAlertState(server={},client={}){
+  const merged={...clone(server||{})};
+  for(const [id,value] of Object.entries(client||{})){
+    const current=merged[id];
+    if(current==null||alertStamp(value)>alertStamp(current))merged[id]=clone(value);
+    else if(alertStamp(value)===alertStamp(current)&&JSON.stringify(value)>JSON.stringify(current))merged[id]=clone(value);
+  }
+  return merged;
+}
+
 export function mergeSnapshots(serverSnapshot,clientSnapshot){
   if(!serverSnapshot)return clone(clientSnapshot);
   if(!clientSnapshot)return clone(serverSnapshot);
   const server=clone(serverSnapshot),client=clone(clientSnapshot);
   const merged={...server};
   for(const key of COLLECTIONS)if(Array.isArray(server[key])||Array.isArray(client[key]))merged[key]=mergeCollection(server[key],client[key]);
+  merged.alertState=mergeAlertState(server.alertState,client.alertState);
   const clientNewer=snapshotStamp(client)>snapshotStamp(server);
   merged.settings=clone(clientNewer?client.settings??server.settings:server.settings??client.settings);
   merged.version=Math.max(Number(server.version)||0,Number(client.version)||0);
