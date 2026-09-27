@@ -15,6 +15,11 @@ function clone(snapshot) {
   return typeof structuredClone === 'function' ? structuredClone(snapshot) : JSON.parse(JSON.stringify(snapshot));
 }
 
+function entityId(prefix){
+  if(typeof globalThis.crypto?.randomUUID==='function')return `${prefix}-${globalThis.crypto.randomUUID()}`;
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 function nextId(prefix, list) {
   const max = list.reduce((acc, item) => Math.max(acc, Number(String(item.id).replace(/\D/g,'')) || 0), 0);
   return `${prefix}-${String(max + 1).padStart(6,'0')}`;
@@ -53,7 +58,7 @@ export function createRental(snapshot, draft, actorId) {
   const next = clone(snapshot);
   const now = new Date().toISOString();
   const rental = {
-    id: nextId('LOC', next.rentals), vehicleId:draft.vehicleId, customerId:draft.customerId, attendantId:draft.attendantId,
+    id: entityId('LOC'), vehicleId:draft.vehicleId, customerId:draft.customerId, attendantId:draft.attendantId,
     pickupAt:draft.pickupAt, returnAt:draft.returnAt, status:'reserva', priority:draft.priority ?? 'Media', notes:draft.notes ?? '',
     dailyRate:Number(draft.dailyRate), days, total:round(days * Number(draft.dailyRate)), payments:[], paymentStatus:'aberto',
     createdAt:now, updatedAt:now
@@ -69,6 +74,11 @@ export function moveRental(snapshot, rentalId, status, actorId) {
   const next = clone(snapshot);
   const rental = next.rentals.find((r) => r.id === rentalId);
   if (!rental) throw new Error('Locação não encontrada.');
+  const allowed={reserva:'retirada',retirada:'em_uso',em_uso:'devolucao'};
+  if(allowed[rental.status]!==status)throw new Error('Transição de locação inválida.');
+  const completed=(kind)=>next.inspections?.some(item=>item.rentalId===rental.id&&item.kind===kind&&item.status==='completed');
+  if(status==='em_uso'&&!completed('checkout'))throw new Error('Conclua a vistoria de retirada antes de iniciar a locação.');
+  if(status==='devolucao'&&!completed('return'))throw new Error('Conclua a vistoria de devolução antes de finalizar a locação.');
   rental.status = status;
   rental.updatedAt = new Date().toISOString();
   const vehicle = next.vehicles.find((v) => v.id === rental.vehicleId);
@@ -128,13 +138,15 @@ export function periodAvailability(snapshot, vehicleId, pickupAt, returnAt) {
 
 export function addCustomer(snapshot, input, actorId) {
   const next = clone(snapshot);
-  const customer = { id:nextId('CLI', next.customers), name:input.name.trim(), document:input.document.trim(), phone:input.phone.trim(), email:input.email?.trim() ?? '', address:input.address?.trim() ?? '', active:true };
+  const now=new Date().toISOString();
+  const customer = { id:entityId('CLI'), name:input.name.trim(), document:input.document.trim(), phone:input.phone.trim(), email:input.email?.trim() ?? '', address:input.address?.trim() ?? '', active:true, createdAt:now, updatedAt:now };
   next.customers.unshift(customer); audit(next, actorId, 'customer.created', 'customer', customer.id); next.updatedAt = new Date().toISOString(); return next;
 }
 
 export function addVehicle(snapshot, input, actorId) {
   const next = clone(snapshot);
-  const vehicle = { id:nextId('VEI', next.vehicles), model:input.model.trim(), plate:input.plate.trim().toUpperCase(), year:String(input.year), mileage:Number(input.mileage || 0), category:input.category || 'Padrão', color:input.color || '', dailyRate:Number(input.dailyRate || 0), purchasePrice:Number(input.purchasePrice || 0), availability:'disponivel' };
+  const now=new Date().toISOString();
+  const vehicle = { id:entityId('VEI'), model:input.model.trim(), plate:input.plate.trim().toUpperCase(), year:String(input.year), mileage:Number(input.mileage || 0), category:input.category || 'Padrão', color:input.color || '', dailyRate:Number(input.dailyRate || 0), purchasePrice:Number(input.purchasePrice || 0), availability:'disponivel', createdAt:now, updatedAt:now };
   next.vehicles.unshift(vehicle); audit(next, actorId, 'vehicle.created', 'vehicle', vehicle.id); next.updatedAt = new Date().toISOString(); return next;
 }
 
