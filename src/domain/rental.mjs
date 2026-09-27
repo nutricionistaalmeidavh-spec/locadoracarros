@@ -94,6 +94,8 @@ export function registerPayment(snapshot, rentalId, amount, method, actorId) {
   const next = clone(snapshot);
   const rental = next.rentals.find((r) => r.id === rentalId);
   if (!rental) throw new Error('Locação não encontrada.');
+  const hasDailySchedule=(next.billingPlans??[]).some((plan)=>plan.rentalId===rentalId&&plan.active!==false&&plan.purpose==='rental_schedule');
+  if(rental.billingMode==='daily'||hasDailySchedule)throw new Error('Esta locação usa agenda diária. Registre o recebimento pelas diárias.');
   const received = round(rental.payments.reduce((sum,p) => sum + p.amount, 0));
   if (received + value > rental.total + 0.001) throw new Error('Pagamento excede o saldo da locação.');
   const now = new Date().toISOString();
