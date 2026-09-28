@@ -11,7 +11,7 @@ test('fase 3 aplica shell GD sem alterar o login',()=>{
   const app=read('src/app.mjs');
   const css=read('styles-branding.css');
   assert.match(app,/renderGDLogo/,'shell ainda não usa o componente GD');
-  assert.match(app,/data-screen=\\"\$\{active\}\\"/,'view ainda não expõe a tela ativa para tema');
+  assert.ok(app.includes('data-screen="${active}"'),'view ainda não expõe a tela ativa para tema');
   assert.match(css,/\.sidebar\s*\{/,'sidebar GD não foi aplicada');
   assert.match(css,/\.nav\.active/,'estado ativo dourado não foi aplicado');
   assert.match(css,/\.topbar\s*\{/,'topbar GD não foi aplicada');
@@ -34,4 +34,6 @@ test('fase 5 aplica identidade GD ao fluxo operacional de locação',()=>{
   assert.match(css,/#daily-payment-form/);
   assert.match(css,/#daily-bulk-payment-form/);
   assert.match(css,/#continuous-close-form/);
+  assert.match(css,/#receive-next-daily/,'CTA de recebimento de diária ainda não usa a identidade GD');
+  assert.match(css,/#receive-multiple-daily/,'ação de recebimento múltiplo ainda não usa a identidade GD');
 });
