@@ -1,8 +1,12 @@
+import { normalizeBranding } from './branding.mjs';
+
 function clone(value){return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));}
 
 export function ensureP1Snapshot(input){
   const snapshot=clone(input??{});
   snapshot.version=Math.max(Number(snapshot.version||0),4);
+  snapshot.settings=snapshot.settings&&typeof snapshot.settings==='object'&&!Array.isArray(snapshot.settings)?snapshot.settings:{};
+  snapshot.settings.branding=normalizeBranding(snapshot.settings.branding);
   snapshot.inspections=Array.isArray(snapshot.inspections)?snapshot.inspections:[];
   snapshot.maintenance=Array.isArray(snapshot.maintenance)?snapshot.maintenance:[];
   snapshot.alertState=snapshot.alertState&&typeof snapshot.alertState==='object'&&!Array.isArray(snapshot.alertState)?snapshot.alertState:{};
