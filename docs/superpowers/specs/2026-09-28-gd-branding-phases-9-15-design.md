@@ -25,7 +25,7 @@ Será usada uma arquitetura central de branding com a GD Locações como padrão
 src/domain/branding.mjs
   ├─ DEFAULT_GD_BRANDING
   ├─ normalizeBranding(settings)
-  └─ getEffectiveBranding(snapshot/settings)
+  └─ getEffectiveBranding(settings)
         │
         ├─ src/ui/branding.mjs
         ├─ src/app.mjs
@@ -43,15 +43,17 @@ Desktop Electron
   └─ electron/main.cjs
 ```
 
-O objeto de branding fica dentro de `snapshot.settings.branding`, preservado naturalmente por backup e sync porque já faz parte do snapshot. Não será criado armazenamento paralelo.
+O nome da empresa já existente em `snapshot.settings.companyName` continuará sendo a fonte canônica do nome comercial/legal. Isso evita duplicar `companyName` em dois lugares e preserva compatibilidade com snapshots antigos e documentos existentes.
+
+As preferências puramente visuais ficam em `snapshot.settings.branding`, preservadas naturalmente por backup e sync porque já fazem parte do snapshot. Não será criado armazenamento paralelo.
 
 ## Modelo de branding
 
-O perfil normalizado terá campos controlados:
+`getEffectiveBranding(settings)` compõe o nome existente com preferências visuais normalizadas:
 
 ```js
 {
-  companyName: 'GD Locações',
+  companyName: settings.companyName || 'GD Locações',
   slogan: 'Liberdade para seu destino',
   preset: 'gd',
   density: 'comfortable',
@@ -59,11 +61,29 @@ O perfil normalizado terá campos controlados:
 }
 ```
 
+Persistido em `settings.branding`:
+
+```js
+{
+  slogan: 'Liberdade para seu destino',
+  preset: 'gd',
+  density: 'comfortable',
+  logoVariant: 'gd'
+}
+```
+
+### Valores suportados nesta entrega
+
+- `preset`: somente `gd`.
+- `density`: `comfortable` ou `compact`.
+- `logoVariant`: somente `gd`.
+- `slogan`: texto simples, limitado e escapado na renderização.
+
 ### Decisões de escopo
 
-- `companyName` e `slogan` podem ser administrados pela tela de configurações.
-- `preset` será uma enumeração controlada. Nesta entrega, `gd` é o preset padrão e obrigatório para a instalação da GD.
-- `density` poderá assumir apenas valores suportados pelo sistema, sem valores livres.
+- `settings.companyName` continua editável pela configuração de Empresa e alimenta o branding efetivo.
+- `preset` existe no modelo para manter uma interface estável, mas aparece como identidade institucional fixa nesta entrega, não como seletor livre.
+- `density` pode ser escolhida entre `comfortable` e `compact`.
 - `logoVariant` referencia apenas assets empacotados e conhecidos.
 - Upload de logo binário, URL externa de logo, seletor de qualquer cor e editor livre de tema ficam fora do escopo. Isso evita snapshots grandes, dependência de rede, contraste inválido e divergência entre dispositivos.
 - Valores ausentes, inválidos ou legados sempre caem para `DEFAULT_GD_BRANDING`.
@@ -121,8 +141,8 @@ O perfil normalizado terá campos controlados:
 
 O gerador PDF atual permanece sem dependência externa. Será evoluído para aceitar um cabeçalho de marca com:
 
-- nome comercial;
-- slogan quando houver;
+- nome comercial obtido de `settings.companyName` com fallback GD;
+- slogan obtido do branding efetivo;
 - identificação documental da empresa quando relevante;
 - faixa/divisória discreta de marca;
 - hierarquia tipográfica melhor entre título, metadados e corpo.
@@ -144,7 +164,8 @@ O dourado será usado apenas em elementos vetoriais pequenos do cabeçalho/divis
 Criar `src/domain/branding.mjs` com responsabilidade única:
 
 - definir padrão GD;
-- normalizar dados de branding;
+- normalizar `settings.branding`;
+- compor `settings.companyName` com as preferências visuais;
 - rejeitar valores fora das enumerações suportadas;
 - fornecer branding efetivo para consumidores.
 
@@ -152,12 +173,13 @@ Criar `src/domain/branding.mjs` com responsabilidade única:
 
 ### Compatibilidade
 
-Snapshots antigos sem `branding` recebem o padrão GD em memória e passam a persistir o formato novo na próxima gravação normal. Backup e sync continuam funcionando no mesmo envelope/snapshot; não haverá migração destrutiva nem um segundo banco.
+Snapshots antigos sem `branding` recebem o padrão GD em memória e passam a persistir o formato novo na próxima gravação normal. `settings.companyName`, `document`, `phone` e `address` permanecem no mesmo lugar. Backup e sync continuam funcionando no mesmo envelope/snapshot; não haverá migração destrutiva nem um segundo banco.
 
 ### Critérios de aceite
 
 - snapshot legado abre sem erro;
-- valores inválidos não quebram UI;
+- `settings.companyName` antigo continua sendo respeitado;
+- valores inválidos de branding não quebram UI;
 - backup/restore preserva branding;
 - sync preserva branding;
 - regras de negócio não importam o módulo de branding, exceto documentos que precisam do cabeçalho.
@@ -168,13 +190,15 @@ Snapshots antigos sem `branding` recebem o padrão GD em memória e passam a per
 
 A tela `Backup e configurações` recebe uma seção `Aparência`, disponível apenas para administrador, contendo:
 
-- Nome comercial;
+- Nome comercial, reutilizando `settings.companyName`;
 - Slogan;
-- Preset visual, apresentado como opção controlada;
-- Densidade suportada;
+- Identidade visual: `GD institucional`, exibida como opção fixa/informativa nesta entrega;
+- Densidade: `Confortável` ou `Compacta`;
 - ação `Restaurar padrão GD`.
 
 A tela terá uma prévia pequena e funcional usando os mesmos componentes/tokens do sistema, sem criar um editor visual separado.
+
+`Restaurar padrão GD` redefine slogan, preset, densidade e logo para o padrão GD. O nome comercial só volta para `GD Locações` após confirmação explícita dentro da própria ação, para evitar sobrescrever acidentalmente um nome de empresa já cadastrado.
 
 ### Restrições
 
@@ -188,7 +212,8 @@ A tela terá uma prévia pequena e funcional usando os mesmos componentes/tokens
 
 - salvar aparência persiste no snapshot;
 - reabrir/recarregar mantém a configuração;
-- restaurar padrão volta aos valores GD;
+- densidade aceita somente valores suportados;
+- restaurar padrão volta aos valores GD de forma previsível;
 - inputs são validados e escapados antes de renderização;
 - backup/restore mantém as escolhas.
 
@@ -220,9 +245,21 @@ Revisar as superfícies já existentes, sem reconstruir navegação ou fluxos:
 - sidebar em telas estreitas não deve consumir altura excessiva nem esconder navegação;
 - modais devem caber na viewport e permitir scroll interno quando necessário.
 
+### Larguras de referência para QA
+
+- telefone estreito: 360 px;
+- telefone largo/tablet: 768 px;
+- desktop: 1280 px;
+- Electron: janela mínima atualmente suportada pelo aplicativo.
+
+Essas larguras são referências de teste, não breakpoints obrigatórios de CSS.
+
 ### Critérios de aceite
 
-Testes/QA cobrem ao menos larguras representativas de telefone estreito, telefone largo/tablet e desktop, além do Electron mínimo suportado.
+- nenhuma ação essencial fica escondida nas larguras de referência;
+- tabelas continuam acessíveis;
+- formulários e modais não extrapolam horizontalmente a viewport;
+- shell permanece navegável em touch e mouse.
 
 ## Fase 15 — Acessibilidade
 
@@ -254,8 +291,10 @@ Responsabilidades:
 
 - `styles-branding.css`: identidade base e tokens GD;
 - `styles-branding-balance.css`: correções de hierarquia e sobriedade;
-- nova camada responsiva/acessível poderá ser criada caso manter regras no arquivo base reduza clareza;
+- `styles-responsive-accessibility.css`: nova camada dedicada às Fases 14–15, carregada por último;
 - CSS de domínio/telas existentes continua responsável pelo layout funcional original.
+
+A densidade é aplicada por um atributo/classe no shell (`data-density`) e altera espaçamentos e alturas de controles dentro de limites predefinidos. Ela não altera regras de negócio nem estrutura de dados.
 
 Tokens não devem ser usados diretamente para comunicar estados de negócio quando existir cor semântica específica.
 
@@ -264,11 +303,11 @@ Tokens não devem ser usados diretamente para comunicar estados de negócio quan
 ```text
 Carregamento do snapshot
   → ensureP1Snapshot
-  → normalizeBranding
-  → snapshot.settings.branding normalizado
+  → normalizeBranding(settings.branding)
+  → getEffectiveBranding(settings)
   → renderização usa branding efetivo
 
-Admin salva Aparência
+Admin salva Empresa/Aparência
   → validação/normalização
   → save(snapshot)
   → persistência local
@@ -277,13 +316,13 @@ Admin salva Aparência
   → render
 
 Backup
-  → inclui snapshot.settings.branding
+  → inclui snapshot.settings e snapshot.settings.branding
   → restore existente
   → ensureP1Snapshot
   → normalizeBranding
 ```
 
-PWA e metadados do instalador continuam estáticos e representam a distribuição GD. Personalização por empresa é aplicada dentro da aplicação e documentos, não renomeia dinamicamente o pacote instalado nem o manifesto já instalado.
+PWA e metadados do instalador continuam estáticos e representam a distribuição GD. Personalização interna não renomeia dinamicamente o pacote instalado nem o manifesto já instalado.
 
 ## Tratamento de erros
 
@@ -309,11 +348,13 @@ A implementação seguirá TDD por fase.
 ### Testes unitários/contrato
 
 - normalização de branding padrão/legado/inválido;
+- preservação de `settings.companyName` legado;
 - manifesto e metadados PWA;
 - package/Electron branding;
 - PDF com cabeçalho efetivo;
 - persistência e restore de aparência;
 - fallback de assets/presets;
+- aplicação das duas densidades suportadas;
 - regressão de hierarquia visual: sem dourado em números/KPIs;
 - regras mínimas de responsividade e acessibilidade no CSS/DOM.
 
@@ -346,7 +387,7 @@ Principais arquivos novos ou alterados:
 - `electron/main.cjs`
 - `styles-branding.css`
 - `styles-branding-balance.css`
-- possivelmente `styles-responsive-accessibility.css` se a separação reduzir acoplamento
+- `styles-responsive-accessibility.css` (novo)
 - testes novos em `tests/`
 - QA/E2E apenas quando necessário para cobrir comportamento real
 
@@ -357,6 +398,7 @@ Principais arquivos novos ou alterados:
 - login novo ou mudança de credenciais;
 - upload de logo e armazenamento de mídia no snapshot;
 - temas livres definidos por HEX/RGB;
+- múltiplos presets visuais nesta entrega;
 - dependências pagas;
 - serviços de terceiros;
 - reconstrução completa da UI;
