@@ -54,6 +54,7 @@
       "output": "release"
     },
     "win": {
+      "icon": "assets/branding/gd-icon.ico",
       "executableName": "Sistema Locadora",
       "target": [
         {
