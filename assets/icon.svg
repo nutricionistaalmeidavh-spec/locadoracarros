@@ -1,1 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#151922"/><rect x="72" y="72" width="368" height="368" rx="72" fill="#f37a20"/><text x="256" y="315" text-anchor="middle" font-family="Arial,sans-serif" font-size="170" font-weight="700" fill="white">LV</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">GD Locações</title>
+  <desc id="desc">Ícone GD em dourado e prata sobre azul-marinho.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1">
+      <stop offset="0" stop-color="#9c6b12"/>
+      <stop offset="0.55" stop-color="#f0c85c"/>
+      <stop offset="1" stop-color="#d8a22b"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0" x2="1">
+      <stop offset="0" stop-color="#81868d"/>
+      <stop offset="0.5" stop-color="#f7f7f7"/>
+      <stop offset="1" stop-color="#c8cbd0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#06111d"/>
+  <path d="M76 172c76-64 220-80 332-44 20 8 40 16 60 28-124-20-252-20-392 16Z" fill="url(#gold)"/>
+  <text x="62" y="376" font-family="Arial,Helvetica,sans-serif" font-size="252" font-weight="800" letter-spacing="-28" fill="url(#gold)">G</text>
+  <text x="242" y="376" font-family="Arial,Helvetica,sans-serif" font-size="252" font-weight="800" letter-spacing="-28" fill="url(#silver)">D</text>
+</svg>
