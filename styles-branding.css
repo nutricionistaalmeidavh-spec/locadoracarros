@@ -1,0 +1,47 @@
+:root {
+  --gd-bg: #06111d;
+  --gd-bg-secondary: #0c1824;
+  --gd-gold: #d8a22b;
+  --gd-gold-light: #f0c85c;
+  --gd-gold-dark: #9c6b12;
+  --gd-silver: #c8cbd0;
+  --gd-silver-dark: #81868d;
+  --gd-white: #f7f7f7;
+  --gd-text: #e9eaec;
+  --gd-muted: #9ca3ad;
+  --gd-success: #2ca56c;
+  --gd-warning: #d8a22b;
+  --gd-danger: #d94b4b;
+
+  --gd-radius-sm: 6px;
+  --gd-radius-md: 10px;
+  --gd-radius-lg: 14px;
+
+  --gd-shadow-card: 0 10px 30px rgb(0 0 0 / 18%);
+  --gd-shadow-modal: 0 24px 64px rgb(0 0 0 / 28%);
+
+  --gd-spacing-xs: 4px;
+  --gd-spacing-sm: 8px;
+  --gd-spacing-md: 16px;
+  --gd-spacing-lg: 24px;
+}
+
+.gd-brand {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.gd-brand--full {
+  width: min(280px, 100%);
+}
+
+.gd-brand--compact {
+  width: 132px;
+}
+
+.gd-brand--icon {
+  width: 40px;
+  height: 40px;
+}
