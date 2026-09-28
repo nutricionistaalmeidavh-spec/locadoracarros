@@ -315,6 +315,267 @@
   padding-left: 12px;
 }
 
+/* Fase 6 — frota */
+[data-screen="frota"] .vehicle {
+  position: relative;
+  overflow: hidden;
+  border-color: #dfe3e8;
+  border-top: 3px solid var(--gd-gold);
+  box-shadow: 0 8px 22px rgb(6 17 29 / 6%);
+}
+
+[data-screen="frota"] .vehicle h3 {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="frota"] .vehicle > div > b,
+[data-screen="frota"] .vehicle dl div:nth-child(3) dd {
+  color: var(--gd-gold-dark);
+}
+
+[data-screen="frota"] .vehicle dl div {
+  background: #f7f8fa;
+  border: 1px solid #eceef1;
+}
+
+[data-screen="frota"] .vehicle-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+[data-screen="frota"] [data-availability="disponivel"] {
+  background: #e8f6ef;
+  color: #247a55;
+}
+
+[data-screen="frota"] [data-availability="alugado"],
+[data-screen="frota"] [data-availability="em_uso"] {
+  background: #edf4ff;
+  color: #2d63a7;
+}
+
+[data-screen="frota"] [data-availability="manutencao"],
+[data-screen="frota"] [data-availability="indisponivel"] {
+  background: #fff0ef;
+  color: #b33b33;
+}
+
+[data-screen="frota"] .vehicle-actions button {
+  border: 1px solid #cfd4da;
+  background: #fff;
+  color: var(--gd-bg-secondary);
+  padding: 7px 10px;
+  border-radius: var(--gd-radius-sm);
+}
+
+[data-screen="frota"] .vehicle-actions button:hover {
+  border-color: var(--gd-gold);
+  color: var(--gd-gold-dark);
+}
+
+#vehicle-form,
+#vehicle-docs-form {
+  border-top: 3px solid var(--gd-gold);
+  padding-top: var(--gd-spacing-md);
+}
+
+#vehicle-form label,
+#vehicle-docs-form label {
+  color: #4f5864;
+  font-weight: 600;
+}
+
+#vehicle-form input,
+#vehicle-form select,
+#vehicle-docs-form input {
+  border-color: #cfd4da;
+}
+
+#vehicle-form .primary,
+#vehicle-docs-form .primary {
+  background: var(--gd-gold);
+  border-color: var(--gd-gold);
+  color: var(--gd-bg);
+  font-weight: 800;
+}
+
+/* Fase 7 — financeiro */
+[data-screen="financeiro"] .cards article {
+  position: relative;
+  overflow: hidden;
+  border-color: #dfe3e8;
+  box-shadow: 0 7px 20px rgb(6 17 29 / 5%);
+}
+
+[data-screen="financeiro"] .cards article::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--gd-gold);
+}
+
+[data-screen="financeiro"] .cards article strong {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="financeiro"] > .cards article:nth-child(2) strong,
+[data-screen="financeiro"] .panel .cards article:nth-child(1) strong {
+  color: #247a55;
+}
+
+[data-screen="financeiro"] > .cards article:nth-child(3) strong,
+[data-screen="financeiro"] .panel .cards article:nth-child(3) strong {
+  color: var(--gd-gold-dark);
+}
+
+[data-screen="financeiro"] .panel .cards article:nth-child(4) strong {
+  color: var(--gd-danger);
+}
+
+[data-screen="financeiro"] .panel {
+  border-color: #dfe3e8;
+  box-shadow: 0 7px 20px rgb(6 17 29 / 4%);
+}
+
+[data-screen="financeiro"] .panel-title small,
+[data-screen="financeiro"] .panel h2 {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="financeiro"] table tbody tr:hover {
+  background: #fffdf7;
+}
+
+[data-screen="financeiro"] table tbody td:last-child button {
+  border-color: #cfd4da;
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="financeiro"] table tbody td:last-child button:hover {
+  border-color: var(--gd-gold);
+  color: var(--gd-gold-dark);
+}
+
+#pay-form,
+#expense-form {
+  border-top: 3px solid var(--gd-gold);
+  padding-top: var(--gd-spacing-md);
+}
+
+#pay-form label,
+#expense-form label {
+  color: #4f5864;
+  font-weight: 600;
+}
+
+#pay-form input,
+#pay-form select,
+#expense-form input,
+#expense-form select {
+  border-color: #cfd4da;
+}
+
+#pay-form input[name="amount"],
+#expense-form input[name="amount"] {
+  border-color: var(--gd-gold);
+  background: #fffdf7;
+  font-weight: 700;
+}
+
+#pay-form .primary,
+#expense-form .primary {
+  background: var(--gd-gold);
+  border-color: var(--gd-gold);
+  color: var(--gd-bg);
+  font-weight: 800;
+}
+
+/* Fase 8 — login */
+.login-wrap {
+  background: linear-gradient(145deg, var(--gd-bg) 0%, var(--gd-bg-secondary) 68%, #111b25 100%);
+}
+
+.login-card {
+  border: 1px solid rgb(216 162 43 / 28%);
+  border-radius: var(--gd-radius-lg);
+  box-shadow: var(--gd-shadow-modal);
+  padding: 32px;
+}
+
+.gd-login-brand {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eceef1;
+}
+
+.login-logo {
+  width: min(230px, 100%);
+  max-height: 112px;
+}
+
+.gd-login-slogan {
+  margin: 0;
+  color: var(--gd-gold-dark);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.gd-login-heading small {
+  color: var(--gd-gold-dark);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.gd-login-heading h1 {
+  margin: 4px 0 0;
+  color: var(--gd-bg-secondary);
+  font-size: 25px;
+}
+
+.login-card label {
+  color: #4f5864;
+  font-weight: 600;
+}
+
+.login-card input {
+  border-color: #cfd4da;
+}
+
+.login-card input:focus-visible,
+.login-card button:focus-visible {
+  outline: 2px solid var(--gd-gold);
+  outline-offset: 2px;
+}
+
+.login-card .primary {
+  background: var(--gd-gold);
+  border: 1px solid var(--gd-gold);
+  color: var(--gd-bg);
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgb(156 107 18 / 18%);
+}
+
+.login-card .primary:hover {
+  background: var(--gd-gold-light);
+  border-color: var(--gd-gold-light);
+}
+
+.login-card .hint {
+  text-align: center;
+}
+
 @media(max-width:900px) {
   .sidebar {
     border-right: 0;
@@ -323,5 +584,15 @@
 
   .sidebar .nav.active {
     box-shadow: inset 0 -3px var(--gd-gold);
+  }
+}
+
+@media(max-width:520px) {
+  .login-card {
+    padding: 24px 20px;
+  }
+
+  .login-logo {
+    width: min(200px, 100%);
   }
 }
