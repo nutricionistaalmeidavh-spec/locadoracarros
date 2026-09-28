@@ -11,6 +11,17 @@ async function login(page){
  await expect(page.locator('.session')).toBeVisible();
 }
 
+async function seedRentalDependencies(page){
+ await page.evaluate(async()=>{
+   const key='app:snapshot:v3',snapshot=JSON.parse(await window.locadoraDesktop.dbGet(key));
+   snapshot.customers=[{id:'CLI-QA-RESP',name:'Cliente QA',document:'12345678900',phone:'',email:'',address:'',active:true,driverLicense:{number:'',category:'',expiry:''}}];
+   snapshot.vehicles=[{id:'VEI-QA-RESP',model:'Onix QA',plate:'QA12345',year:2026,color:'Prata',dailyRate:100,mileage:1000,availability:'disponivel',active:true,documents:{insuranceExpiry:'',licensingExpiry:'',inspectionExpiry:'',renavam:'',chassis:''}}];
+   await window.locadoraDesktop.dbSet(key,JSON.stringify(snapshot));
+ });
+ await page.reload();
+ await login(page);
+}
+
 async function assertViewport(page,width){
  await page.setViewportSize({width,height:800});
  await page.waitForTimeout(80);
@@ -26,7 +37,7 @@ async function assertViewport(page,width){
 test('responsividade: shell e modal funcionam em 360, 768 e 1280 px',async()=>{
  const ctx=await launchLocadora();
  try{
-  const p=ctx.page;await login(p);
+  const p=ctx.page;await login(p);await seedRentalDependencies(p);
   for(const width of [360,768,1280])await assertViewport(p,width);
   await p.setViewportSize({width:360,height:800});
   await p.locator('[data-nav="reservas"]').click();
