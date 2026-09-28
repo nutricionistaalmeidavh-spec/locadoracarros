@@ -1,0 +1,72 @@
+/* Harmonização GD — dourado como assinatura, não como cor de leitura. */
+
+/* Dashboard: números e tabelas permanecem neutros; vermelho segue semântico. */
+[data-screen="dashboard"] .cards.six article::before {
+  width: 2px;
+  background: rgb(216 162 43 / 58%);
+}
+
+[data-screen="dashboard"] .cards.six article:nth-child(4) strong,
+[data-screen="dashboard"] .cards.six article:nth-child(6) strong {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="dashboard"] .kpi-lines b {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="dashboard"] tbody tr:hover {
+  background: #f7f8fa;
+}
+
+/* Reservas: leitura neutra; dourado aparece somente nas ações/estados interativos. */
+[data-screen="reservas"] .cards article:nth-child(3) strong {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="reservas"] .agenda-item:hover {
+  border-color: #cfd4da;
+  background: #f7f8fa;
+}
+
+[data-screen="reservas"] table tbody tr:hover {
+  background: #f7f8fa;
+}
+
+#daily-payment-form input[name="amount"],
+#daily-bulk-payment-form input[name="amount"] {
+  border-color: #cfd4da;
+  background: #fff;
+}
+
+/* Frota: preço e métricas usam a mesma hierarquia dos demais dados. */
+[data-screen="frota"] .vehicle {
+  border-top-width: 2px;
+  border-top-color: rgb(216 162 43 / 58%);
+}
+
+[data-screen="frota"] .vehicle > div > b,
+[data-screen="frota"] .vehicle dl div:nth-child(3) dd {
+  color: var(--gd-bg-secondary);
+}
+
+/* Financeiro: verde/vermelho continuam semânticos; demais valores ficam neutros. */
+[data-screen="financeiro"] .cards article::before {
+  width: 2px;
+  background: rgb(216 162 43 / 58%);
+}
+
+[data-screen="financeiro"] > .cards article:nth-child(3) strong,
+[data-screen="financeiro"] .panel .cards article:nth-child(3) strong {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="financeiro"] table tbody tr:hover {
+  background: #f7f8fa;
+}
+
+#pay-form input[name="amount"],
+#expense-form input[name="amount"] {
+  border-color: #cfd4da;
+  background: #fff;
+}
