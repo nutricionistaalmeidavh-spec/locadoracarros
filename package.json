@@ -32,8 +32,8 @@
   },
   "build": {
     "appId": "com.artisys.locadora",
-    "productName": "Sistema Locadora",
-    "artifactName": "Sistema-Locadora-Setup-${version}.${ext}",
+    "productName": "GD Locações",
+    "artifactName": "GD-Locacoes-Setup-${version}.${ext}",
     "files": [
       "index.html",
       "styles-branding.css",
