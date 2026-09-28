@@ -9,6 +9,7 @@ const rootFiles = [
   'index.html',
   'styles-branding.css',
   'styles-branding-balance.css',
+  'styles-responsive-accessibility.css',
   'styles.css',
   'styles-p1.css',
   'styles-p2.css',
