@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">GD Locações</title>
+  <desc id="desc">Ícone técnico GD em dourado e prata sobre azul-marinho.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1">
+      <stop offset="0" stop-color="#9c6b12"/>
+      <stop offset="0.55" stop-color="#f0c85c"/>
+      <stop offset="1" stop-color="#d8a22b"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0" x2="1">
+      <stop offset="0" stop-color="#81868d"/>
+      <stop offset="0.5" stop-color="#f7f7f7"/>
+      <stop offset="1" stop-color="#c8cbd0"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="24" fill="#06111d"/>
+  <path d="M19 43c19-16 55-20 83-11 5 2 10 4 15 7-31-5-63-5-98 4Z" fill="url(#gold)"/>
+  <text x="15" y="94" font-family="Arial,Helvetica,sans-serif" font-size="63" font-weight="800" letter-spacing="-7" fill="url(#gold)">G</text>
+  <text x="60" y="94" font-family="Arial,Helvetica,sans-serif" font-size="63" font-weight="800" letter-spacing="-7" fill="url(#silver)">D</text>
+</svg>
