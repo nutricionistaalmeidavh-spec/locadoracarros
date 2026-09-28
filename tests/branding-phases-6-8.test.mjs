@@ -26,11 +26,11 @@ test('fase 7 aplica identidade GD ao financeiro preservando semântica',()=>{
   assert.match(css,/#expense-form/,'modal de despesa ainda não recebeu o tema GD');
 });
 
-test('fase 8 substitui branding genérico pelo login GD Locações',()=>{
+test('fase 8 mantém o login com identidade GD Locações',()=>{
   const app=read('src/app.mjs');
   const css=read('styles-branding.css');
-  assert.match(app,/GD_BRAND/,'login ainda não usa os metadados da GD');
-  assert.ok(app.includes("renderGDLogo({variant:'full',className:'login-logo'})"),'login ainda não usa a logo completa da GD');
+  assert.match(app,/getEffectiveBranding/,'login ainda não usa os metadados efetivos da GD');
+  assert.ok(app.includes("renderGDLogo({variant:'full',className:'login-logo',alt:brand.companyName})"),'login ainda não usa a logo completa da GD');
   assert.doesNotMatch(app,/<span class="brandmark">LV<\/span>/,'branding LV ainda aparece no login');
   assert.match(app,/gd-login-slogan/,'slogan da GD ainda não aparece no login');
   assert.match(css,/\.login-wrap\s*\{/,'fundo do login GD ainda não foi aplicado');

@@ -1,0 +1,267 @@
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.shell,
+.shell main,
+.content,
+.panel,
+.vehicle {
+  min-width: 0;
+}
+
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal {
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+:where(button, input, select, textarea, a, [tabindex]):focus-visible {
+  outline: 3px solid var(--gd-gold);
+  outline-offset: 2px;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: .62;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.nav[aria-current="page"] {
+  font-weight: 800;
+  text-decoration-thickness: 2px;
+}
+
+.error:not(:empty) {
+  border-left: 3px solid var(--gd-danger);
+  padding-left: 8px;
+}
+
+.gd-appearance-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid #dfe3e8;
+  border-left: 3px solid var(--gd-gold);
+  border-radius: var(--gd-radius-md);
+  background: #f7f8fa;
+  color: var(--gd-bg-secondary);
+}
+
+.gd-appearance-preview .appearance-logo {
+  width: 104px;
+  flex: 0 0 auto;
+}
+
+.gd-appearance-preview > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.gd-appearance-preview small {
+  color: #69727f;
+  overflow-wrap: anywhere;
+}
+
+.appearance-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+[data-density='compact'] .content {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+[data-density='compact'] .cards article,
+[data-density='compact'] .panel,
+[data-density='compact'] .vehicle {
+  padding: 14px;
+}
+
+[data-density='compact'] .form-grid {
+  gap: 9px;
+}
+
+[data-density='compact'] .form-grid input,
+[data-density='compact'] .form-grid select,
+[data-density='compact'] .form-grid textarea {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+[data-density='comfortable'] .form-grid input,
+[data-density='comfortable'] .form-grid select,
+[data-density='comfortable'] .form-grid textarea {
+  min-height: 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: 100vw;
+    padding: 8px 10px;
+    overflow: hidden;
+  }
+
+  .sidebar nav {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .nav,
+  .session button,
+  button,
+  .file-button,
+  input,
+  select {
+    min-height: 40px;
+  }
+
+  .nav {
+    flex: 0 0 auto;
+    width: auto;
+    padding-inline: 12px;
+  }
+
+  .content {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px;
+  }
+
+  .heading,
+  .panel-title,
+  .actions,
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .heading {
+    gap: 12px;
+  }
+
+  .heading > button,
+  .heading > .primary {
+    max-width: 100%;
+  }
+
+  .split,
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .form-grid .full {
+    grid-column: auto;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vehicle-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  }
+
+  table {
+    min-width: 620px;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+    align-items: center;
+  }
+
+  .modal {
+    padding: 16px;
+    width: min(720px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+  }
+
+  .gd-appearance-preview {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .content {
+    padding: 12px;
+  }
+
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heading {
+    align-items: stretch;
+  }
+
+  .heading > button,
+  .heading > .primary,
+  .appearance-actions button,
+  .modal-actions button {
+    width: 100%;
+  }
+
+  .agenda-item {
+    grid-template-columns: 10px minmax(0, 1fr);
+  }
+
+  .agenda-item > b,
+  .agenda-item > .badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .gd-appearance-preview {
+    display: grid;
+  }
+
+  .gd-appearance-preview .appearance-logo {
+    width: 96px;
+  }
+}
