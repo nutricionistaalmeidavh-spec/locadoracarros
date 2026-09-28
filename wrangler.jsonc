@@ -1,0 +1,19 @@
+{
+  "name": "sistemaaluguelcarrogeorge",
+  "compatibility_date": "2026-09-27",
+  "assets": {
+    "directory": "./dist"
+  },
+  "d1_databases": [
+    {
+      "binding": "Bd",
+      "database_name": "db"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "r2",
+      "bucket_name": "r2george"
+    }
+  ]
+}
