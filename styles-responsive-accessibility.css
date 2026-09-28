@@ -26,6 +26,30 @@ body {
   overscroll-behavior: contain;
 }
 
+:where(button, input, select, textarea, a, [tabindex]):focus-visible {
+  outline: 3px solid var(--gd-gold);
+  outline-offset: 2px;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: .62;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.nav[aria-current="page"] {
+  font-weight: 800;
+  text-decoration-thickness: 2px;
+}
+
+.error:not(:empty) {
+  border-left: 3px solid var(--gd-danger);
+  padding-left: 8px;
+}
+
 .gd-appearance-preview {
   display: flex;
   align-items: center;
@@ -88,6 +112,17 @@ body {
 [data-density='comfortable'] .form-grid select,
 [data-density='comfortable'] .form-grid textarea {
   min-height: 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
 
 @media (max-width: 900px) {
