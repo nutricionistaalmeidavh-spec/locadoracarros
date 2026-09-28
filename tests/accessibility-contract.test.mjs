@@ -17,8 +17,8 @@ test('fase 15 expõe foco, live regions e diálogo acessível',()=>{
   assert.match(css,/button:disabled|:disabled/,'estado disabled precisa de tratamento perceptivel');
   assert.match(css,/\.nav\[aria-current="page"\]/,'navegacao ativa precisa de indicacao alem da cor');
 
-  assert.match(common,/role=['"]status['"]/,'toast ainda nao e live region');
-  assert.match(common,/aria-live=['"]polite['"]/,'toast precisa anunciar mensagens');
+  assert.ok(common.includes("setAttribute('role','status')")||/role=['\"]status['\"]/.test(common),'toast ainda nao e live region');
+  assert.ok(common.includes("setAttribute('aria-live','polite')")||/aria-live=['\"]polite['\"]/.test(common),'toast precisa anunciar mensagens');
   assert.match(common,/role="dialog"/,'modal ainda nao tem role dialog');
   assert.match(common,/aria-modal="true"/,'modal ainda nao informa modalidade');
   assert.match(common,/aria-labelledby=/,'modal precisa apontar para o titulo');
