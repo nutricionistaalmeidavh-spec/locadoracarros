@@ -279,11 +279,28 @@
 #rental-form .primary,
 #daily-payment-form .primary,
 #daily-bulk-payment-form .primary,
-#continuous-close-form .primary {
+#continuous-close-form .primary,
+#receive-next-daily.primary {
   background: var(--gd-gold);
   border-color: var(--gd-gold);
   color: var(--gd-bg);
   font-weight: 800;
+}
+
+#receive-next-daily.primary:hover {
+  background: var(--gd-gold-light);
+  border-color: var(--gd-gold-light);
+}
+
+#receive-multiple-daily {
+  border-color: #cfd4da;
+  background: #fff;
+  color: var(--gd-bg-secondary);
+}
+
+#receive-multiple-daily:hover {
+  border-color: var(--gd-gold);
+  color: var(--gd-gold-dark);
 }
 
 #daily-payment-form input[name="amount"],
