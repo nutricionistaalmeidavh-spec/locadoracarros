@@ -45,3 +45,283 @@
   width: 40px;
   height: 40px;
 }
+
+/* Fase 3 — shell autenticado GD Locações */
+.sidebar {
+  background: linear-gradient(180deg, var(--gd-bg) 0%, var(--gd-bg-secondary) 100%);
+  border-right: 1px solid rgb(216 162 43 / 24%);
+  color: var(--gd-white);
+  box-shadow: 10px 0 30px rgb(6 17 29 / 8%);
+}
+
+.gd-sidebar-brand {
+  min-height: 52px;
+  padding: 2px 8px 16px;
+  border-bottom: 1px solid rgb(200 203 208 / 14%);
+}
+
+.sidebar-logo {
+  width: 148px;
+  max-height: 52px;
+}
+
+.sidebar .nav,
+.sidebar .session button {
+  color: var(--gd-silver);
+}
+
+.sidebar .nav:hover {
+  background: rgb(255 255 255 / 6%);
+  color: var(--gd-white);
+}
+
+.sidebar .nav.active {
+  background: rgb(216 162 43 / 12%);
+  color: var(--gd-gold-light);
+  box-shadow: inset 3px 0 var(--gd-gold);
+}
+
+.sidebar .session {
+  border-top-color: rgb(200 203 208 / 14%);
+}
+
+.sidebar .session small {
+  color: var(--gd-muted);
+}
+
+.topbar {
+  background: var(--gd-bg-secondary);
+  border-bottom: 1px solid rgb(216 162 43 / 28%);
+  color: var(--gd-silver);
+  box-shadow: 0 2px 10px rgb(6 17 29 / 8%);
+}
+
+.topbar span:first-child,
+.topbar span:nth-child(3) {
+  color: var(--gd-gold-light);
+}
+
+.shell main {
+  background: #f4f5f7;
+}
+
+.shell .heading small {
+  color: var(--gd-gold-dark);
+}
+
+.shell .primary {
+  background: var(--gd-gold);
+  border-color: var(--gd-gold);
+  color: var(--gd-bg);
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgb(156 107 18 / 18%);
+}
+
+.shell .primary:hover {
+  background: var(--gd-gold-light);
+  border-color: var(--gd-gold-light);
+}
+
+.shell button:focus-visible,
+.shell input:focus-visible,
+.shell select:focus-visible,
+.shell textarea:focus-visible,
+#rental-form input:focus-visible,
+#rental-form select:focus-visible,
+#rental-form textarea:focus-visible,
+#daily-payment-form input:focus-visible,
+#daily-payment-form select:focus-visible,
+#daily-bulk-payment-form input:focus-visible,
+#daily-bulk-payment-form select:focus-visible,
+#continuous-close-form input:focus-visible {
+  outline: 2px solid var(--gd-gold);
+  outline-offset: 2px;
+}
+
+/* Fase 4 — dashboard */
+[data-screen="dashboard"] .cards.six article {
+  position: relative;
+  overflow: hidden;
+  border-color: #dfe3e8;
+  box-shadow: 0 8px 22px rgb(6 17 29 / 6%);
+}
+
+[data-screen="dashboard"] .cards.six article::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--gd-gold);
+}
+
+[data-screen="dashboard"] .cards.six article small {
+  color: #69727f;
+  font-weight: 650;
+}
+
+[data-screen="dashboard"] .cards.six article strong {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="dashboard"] .cards.six article:nth-child(3) strong {
+  color: var(--gd-danger);
+}
+
+[data-screen="dashboard"] .cards.six article:nth-child(4) strong,
+[data-screen="dashboard"] .cards.six article:nth-child(6) strong {
+  color: var(--gd-gold-dark);
+}
+
+[data-screen="dashboard"] .panel {
+  border-color: #dfe3e8;
+  box-shadow: 0 8px 22px rgb(6 17 29 / 5%);
+}
+
+[data-screen="dashboard"] .panel h2 {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="dashboard"] .kpi-lines p {
+  border-bottom-color: #e7e9ec;
+}
+
+[data-screen="dashboard"] .kpi-lines b {
+  color: var(--gd-gold-dark);
+}
+
+[data-screen="dashboard"] th {
+  color: var(--gd-silver-dark);
+}
+
+[data-screen="dashboard"] tbody tr:hover {
+  background: #faf8f2;
+}
+
+/* Fase 5 — reservas, locações, devolução e recebimentos */
+[data-screen="reservas"] .cards article {
+  border-color: #e0e3e7;
+  box-shadow: 0 6px 18px rgb(6 17 29 / 5%);
+}
+
+[data-screen="reservas"] .cards article strong {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="reservas"] .cards article:nth-child(2) strong {
+  color: #247a55;
+}
+
+[data-screen="reservas"] .cards article:nth-child(3) strong {
+  color: var(--gd-gold-dark);
+}
+
+[data-screen="reservas"] .panel {
+  border-color: #e0e3e7;
+}
+
+[data-screen="reservas"] .agenda-item {
+  border-color: #e4e6e9;
+  background: #fff;
+  box-shadow: 0 3px 10px rgb(6 17 29 / 3%);
+}
+
+[data-screen="reservas"] .agenda-item:hover {
+  border-color: rgb(216 162 43 / 55%);
+  background: #fffdf7;
+}
+
+[data-screen="reservas"] .agenda-item b {
+  color: var(--gd-bg-secondary);
+}
+
+[data-screen="reservas"] table tbody tr:hover {
+  background: #fffdf7;
+}
+
+[data-screen="reservas"] td.actions button:not(.primary) {
+  border-color: #cfd4da;
+  color: var(--gd-bg-secondary);
+  background: #fff;
+}
+
+[data-screen="reservas"] td.actions button:not(.primary):hover {
+  border-color: var(--gd-gold);
+  color: var(--gd-gold-dark);
+}
+
+#rental-form,
+#daily-payment-form,
+#daily-bulk-payment-form,
+#continuous-close-form {
+  border-top: 3px solid var(--gd-gold);
+  padding-top: var(--gd-spacing-md);
+}
+
+#rental-form label,
+#daily-payment-form label,
+#daily-bulk-payment-form label,
+#continuous-close-form label {
+  color: #4f5864;
+  font-weight: 600;
+}
+
+#rental-form input,
+#rental-form select,
+#rental-form textarea,
+#daily-payment-form input,
+#daily-payment-form select,
+#daily-bulk-payment-form input,
+#daily-bulk-payment-form select,
+#continuous-close-form input {
+  border-color: #cfd4da;
+}
+
+#rental-form .primary,
+#daily-payment-form .primary,
+#daily-bulk-payment-form .primary,
+#continuous-close-form .primary,
+#receive-next-daily.primary {
+  background: var(--gd-gold);
+  border-color: var(--gd-gold);
+  color: var(--gd-bg);
+  font-weight: 800;
+}
+
+#receive-next-daily.primary:hover {
+  background: var(--gd-gold-light);
+  border-color: var(--gd-gold-light);
+}
+
+#receive-multiple-daily {
+  border-color: #cfd4da;
+  background: #fff;
+  color: var(--gd-bg-secondary);
+}
+
+#receive-multiple-daily:hover {
+  border-color: var(--gd-gold);
+  color: var(--gd-gold-dark);
+}
+
+#daily-payment-form input[name="amount"],
+#daily-bulk-payment-form input[name="amount"] {
+  border-color: var(--gd-gold);
+  background: #fffdf7;
+  font-weight: 700;
+}
+
+#continuous-close-form .hint {
+  border-left: 3px solid var(--gd-gold);
+  padding-left: 12px;
+}
+
+@media(max-width:900px) {
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid rgb(216 162 43 / 24%);
+  }
+
+  .sidebar .nav.active {
+    box-shadow: inset 0 -3px var(--gd-gold);
+  }
+}
