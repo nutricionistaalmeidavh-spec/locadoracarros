@@ -20,11 +20,15 @@ function escapeAttribute(value) {
     .replaceAll('>', '&gt;');
 }
 
-export function renderGDLogo({ variant = 'full', className = '', alt = GD_BRAND.companyName } = {}) {
+export function renderBrandLogo({ variant = 'full', className = '', alt = GD_BRAND.companyName } = {}) {
   if (!VARIANTS.has(variant)) throw new RangeError(`Variante de logo GD inválida: ${variant}`);
 
-  const classes = ['gd-brand', `gd-brand--${variant}`, className.trim()].filter(Boolean).join(' ');
+  const classes = ['gd-brand', `gd-brand--${variant}`, String(className).trim()].filter(Boolean).join(' ');
   const src = ASSETS[variant];
 
   return `<img class="${escapeAttribute(classes)}" data-variant="${variant}" src="${src}" alt="${escapeAttribute(alt)}" decoding="async">`;
+}
+
+export function renderGDLogo(options = {}) {
+  return renderBrandLogo(options);
 }
