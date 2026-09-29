@@ -71,6 +71,15 @@ test('catálogo visual: captura todas as telas online e desktop',async()=>{
     const executablePath=candidates.find(existsSync);
     browser=await chromium.launch({headless:true,executablePath:executablePath||undefined,args:['--no-sandbox','--disable-dev-shm-usage']});
     const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});
+    await context.addInitScript(()=>{
+      const memory=new Map();
+      Object.defineProperty(window,'locadoraDesktop',{configurable:true,value:{
+        dbGet:async key=>memory.get(String(key))??null,
+        dbSet:async(key,value)=>{memory.set(String(key),String(value));return true;},
+        dbRemove:async key=>{memory.delete(String(key));return true;},
+        getSyncInfo:async()=>({available:false})
+      }});
+    });
     const page=await context.newPage();
     const pageErrors=[];page.on('pageerror',error=>pageErrors.push(error.message));
     await page.goto(server.url,{waitUntil:'domcontentloaded',timeout:30000});
