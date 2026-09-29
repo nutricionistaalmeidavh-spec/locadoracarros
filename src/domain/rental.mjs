@@ -7,7 +7,7 @@ export function createEmptySnapshot() {
     version: 2,
     updatedAt: new Date().toISOString(),
     customers: [], vehicles: [], rentals: [], expenses: [], users: seedUsers(), ledger: [], audit: [],
-    settings: { companyName:'Sistema Locadora', document:'', phone:'', address:'' }
+    settings: { companyName:'GD Locações', document:'', phone:'', address:'' }
   };
 }
 

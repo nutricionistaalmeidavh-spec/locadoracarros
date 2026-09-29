@@ -10,10 +10,15 @@ const read=(path)=>readFileSync(resolve(root,path),'utf8');
 test('fase 10 identifica o desktop como GD Locacoes sem enfraquecer Electron',()=>{
   const pkg=JSON.parse(read('package.json'));
   const main=read('electron/main.cjs');
+  const iconGenerator=read('scripts/generate-windows-icon.mjs');
 
   assert.equal(pkg.build.appId,'com.artisys.locadora','appId deve permanecer estavel para preservar dados e upgrade');
   assert.equal(pkg.build.productName,'GD Locações');
   assert.equal(pkg.build.artifactName,'GD-Locacoes-Setup-${version}.${ext}');
+  assert.equal(pkg.build.win?.icon,'build/gd-icon.ico','build Windows deve usar o ícone GD gerado, não o padrão Electron');
+  assert.match(pkg.scripts?.['windows:icon'] || '',/generate-windows-icon\.mjs/,'build deve gerar o ICO GD antes do electron-builder');
+  assert.match(pkg.scripts?.dist || '',/npm run windows:icon/,'dist precisa gerar o ICO GD antes de empacotar');
+  assert.match(iconGenerator,/WINDOWS_ICON_SIZES/,'gerador do ícone GD precisa declarar a matriz de tamanhos Windows');
 
   assert.match(main,/title:'GD Locações'/,'janela Electron ainda nao tem titulo GD');
   assert.match(main,/contextIsolation:true/);

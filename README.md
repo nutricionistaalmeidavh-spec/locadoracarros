@@ -1,6 +1,6 @@
-# Sistema Locadora
+# GD Locações
 
-Sistema standalone de gestão de locação de veículos da ArtiSys.
+Sistema standalone de gestão de locação de veículos, com operação local no Windows, acesso responsivo pela rede e identidade visual GD Locações.
 
 ## Escopo final
 
@@ -114,11 +114,23 @@ npm install
 npm run dist
 ```
 
-Saída esperada:
+Saída canônica esperada:
 
 ```text
-release/Sistema-Locadora-Setup-0.7.0.exe
+release/GD-Locacoes-Setup-0.7.0.exe
 ```
+
+## Gates de release
+
+```bash
+npm run verify
+npm run coverage
+npm run e2e
+npm run qa:release
+npm run dist
+```
+
+O build Windows mantém aliases internos apenas para compatibilidade técnica de CI legado; eles não fazem parte da identidade visível do produto.
 
 ## Acesso inicial
 
