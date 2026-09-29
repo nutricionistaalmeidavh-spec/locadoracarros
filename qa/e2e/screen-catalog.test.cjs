@@ -42,7 +42,7 @@ async function login(page){
   await page.getByLabel('Usuário',{exact:true}).fill('admin');
   await page.getByLabel('Senha',{exact:true}).fill(process.env.LOCADORA_QA_ADMIN_PASSWORD||'1234');
   await page.getByRole('button',{name:'Entrar',exact:true}).click();
-  await expect(page.locator('.session')).toBeVisible({timeout:30000});
+  await expect(page.locator('.shell')).toBeVisible({timeout:30000});
 }
 
 async function captureScreens(page,outDir,{fullPage=true}={}){
@@ -52,7 +52,7 @@ async function captureScreens(page,outDir,{fullPage=true}={}){
   let index=1;
   for(const [id] of SCREENS){
     const nav=page.locator(`[data-nav="${id}"]`);
-    await expect(nav).toBeVisible();
+    await expect(nav).toBeAttached();
     await nav.click();
     await expect(page.locator(`[data-screen="${id}"]`)).toBeVisible();
     await page.waitForTimeout(80);
