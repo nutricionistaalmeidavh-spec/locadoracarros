@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 const compatPath = path.join(root, 'scripts/post-dist-compat.mjs');
+const iconPath = path.join(root, 'assets/branding/gd-icon.ico');
 
 test('Windows dist desativa publicação automática do electron-builder no CI', () => {
   assert.match(
@@ -19,6 +20,7 @@ test('Windows dist desativa publicação automática do electron-builder no CI',
 test('Windows build mantém branding GD e compatibilidade com o workflow legado', () => {
   assert.equal(pkg.build.productName, 'GD Locações');
   assert.equal(pkg.build.artifactName, 'GD-Locacoes-Setup-${version}.${ext}');
+  assert.equal(pkg.build.win?.icon, 'assets/branding/gd-icon.ico');
   assert.equal(
     pkg.build.win?.executableName,
     'Sistema Locadora',
@@ -34,4 +36,34 @@ test('Windows build mantém branding GD e compatibilidade com o workflow legado'
   const compat = readFileSync(compatPath, 'utf8');
   assert.match(compat, /GD-Locacoes-Setup-/);
   assert.match(compat, /Sistema-Locadora-Setup-/);
+});
+
+test('ICO GD usa contêiner Windows válido com entrada 256px compatível com NSIS', () => {
+  const icon = readFileSync(iconPath);
+  assert.equal(icon.readUInt16LE(0), 0);
+  assert.equal(icon.readUInt16LE(2), 1);
+
+  const count = icon.readUInt16LE(4);
+  assert.ok(count >= 1);
+
+  let has256 = false;
+  for (let index = 0; index < count; index += 1) {
+    const offset = 6 + index * 16;
+    const width = icon[offset] === 0 ? 256 : icon[offset];
+    const height = icon[offset + 1] === 0 ? 256 : icon[offset + 1];
+    const bytesInResource = icon.readUInt32LE(offset + 8);
+    const imageOffset = icon.readUInt32LE(offset + 12);
+
+    assert.ok(imageOffset + bytesInResource <= icon.length);
+    if (width === 256 && height === 256) {
+      has256 = true;
+      assert.equal(
+        icon.readUInt32LE(imageOffset),
+        40,
+        'a entrada 256px deve usar DIB/BMP em vez de PNG compactado para máxima compatibilidade com makensis'
+      );
+    }
+  }
+
+  assert.equal(has256, true, 'o ICO precisa conter uma entrada 256x256 para electron-builder');
 });
