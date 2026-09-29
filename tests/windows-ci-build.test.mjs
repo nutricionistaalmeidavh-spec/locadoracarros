@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildWindowsIcon, WINDOWS_ICON_SIZES } from '../scripts/generate-windows-icon.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 const compatPath = path.join(root, 'scripts/post-dist-compat.mjs');
-const iconPath = path.join(root, 'assets/branding/gd-icon.ico');
 
 test('Windows dist desativa publicação automática do electron-builder no CI', () => {
   assert.match(
@@ -20,7 +20,8 @@ test('Windows dist desativa publicação automática do electron-builder no CI',
 test('Windows build mantém branding GD e compatibilidade com o workflow legado', () => {
   assert.equal(pkg.build.productName, 'GD Locações');
   assert.equal(pkg.build.artifactName, 'GD-Locacoes-Setup-${version}.${ext}');
-  assert.equal(pkg.build.win?.icon, 'assets/branding/gd-icon.ico');
+  assert.equal(pkg.build.win?.icon, 'build/gd-icon.ico');
+  assert.match(pkg.scripts?.dist || '', /npm run windows:icon/);
   assert.equal(
     pkg.build.win?.executableName,
     'Sistema Locadora',
@@ -38,13 +39,13 @@ test('Windows build mantém branding GD e compatibilidade com o workflow legado'
   assert.match(compat, /Sistema-Locadora-Setup-/);
 });
 
-test('ICO GD usa contêiner Windows válido com entrada 256px compatível com NSIS', () => {
-  const icon = readFileSync(iconPath);
+test('ICO GD gerado usa contêiner Windows válido com entrada 256px compatível com NSIS', () => {
+  const icon = buildWindowsIcon();
   assert.equal(icon.readUInt16LE(0), 0);
   assert.equal(icon.readUInt16LE(2), 1);
 
   const count = icon.readUInt16LE(4);
-  assert.ok(count >= 1);
+  assert.equal(count, WINDOWS_ICON_SIZES.length);
 
   let has256 = false;
   for (let index = 0; index < count; index += 1) {
