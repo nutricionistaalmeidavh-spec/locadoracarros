@@ -14,7 +14,8 @@ test('Cloudflare aponta para o Worker e os recursos do George', () => {
   assert.deepEqual(config.d1_databases, [
     {
       binding: 'Bd',
-      database_name: 'db'
+      database_name: 'db',
+      database_id: '5a713bea-5799-48cb-833b-8199de893963'
     }
   ]);
 
