@@ -34,6 +34,13 @@ async function assertNoBodyOverflow(page,width,screen){
  assert.ok(metrics.scrollWidth<=metrics.innerWidth+1,`${screen} vazou horizontalmente em ${width}px: ${metrics.scrollWidth}/${metrics.innerWidth}`);
 }
 
+async function assertCompactMobileShell(page,width,screen){
+ const sidebar=await page.locator('.sidebar').boundingBox();
+ const main=await page.locator('.shell main').boundingBox();
+ assert.ok(sidebar&&sidebar.height<=80,`${screen}: navegação mobile consumiu ${sidebar?.height}px de altura em ${width}px`);
+ assert.ok(main&&sidebar&&Math.abs(main.y-(sidebar.y+sidebar.height))<=2,`${screen}: conteúdo não começa imediatamente após a navegação mobile`);
+}
+
 async function assertScreenMatrix(page,width){
  await page.setViewportSize({width,height:800});
  for(const screen of ADMIN_SCREENS){
@@ -43,6 +50,7 @@ async function assertScreenMatrix(page,width){
   await expect(page.locator(`[data-screen="${screen}"]`)).toBeVisible();
   await expect(page.locator('#view')).toBeVisible();
   await assertNoBodyOverflow(page,width,screen);
+  if(width<=900)await assertCompactMobileShell(page,width,screen);
  }
  const firstNav=page.locator('.nav').first();
  if(width<=900){
